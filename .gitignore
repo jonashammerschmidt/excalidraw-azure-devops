@@ -141,4 +141,5 @@ vite.config.ts.timestamp-*
 .vite/
 
 # Custom
+.DS_Store
 *.vsix
