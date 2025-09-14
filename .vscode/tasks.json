@@ -1,0 +1,24 @@
+{
+  // For more information, visit: https://go.microsoft.com/fwlink/?LinkId=733558
+  "version": "2.0.0",
+  "tasks": [
+    {
+      "label": "npm install",
+      "type": "shell",
+      "command": "npm install",
+      "problemMatcher": []
+    },
+    {
+      "label": "publish",
+      "type": "shell",
+      "command": "npx tfx-cli extension create",
+      "problemMatcher": []
+    },
+    {
+      "label": "publish (increase version)",
+      "type": "shell",
+      "command": "npx tfx-cli extension create --rev-version",
+      "problemMatcher": []
+    }
+  ]
+}
