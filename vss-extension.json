@@ -2,7 +2,7 @@
     "manifestVersion": 1,
     "id": "excalidraw-dev",
     "publisher": "JonasHammerschmidt",
-    "version": "0.0.1",
+    "version": "0.0.3",
     "name": "Excalidraw (Dev)",
     "description": "View and edit Excalidraw drawings in Azure DevOps",
     "public": false,
@@ -17,7 +17,7 @@
             "id": "drawings",
             "type": "ms.vss-web.hub",
             "targets": [
-                "ms.vss-work-web.work-hub-group"
+                "ms.vss-web.home-hub-group"
             ],
             "properties": {
                 "name": "Drawings",
