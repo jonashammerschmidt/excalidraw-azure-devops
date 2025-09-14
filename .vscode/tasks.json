@@ -9,13 +9,21 @@
       "problemMatcher": []
     },
     {
+      "label": "build",
+      "type": "shell",
+      "command": "npm run build",
+      "problemMatcher": []
+    },
+    {
       "label": "publish",
+      "dependsOn": "build",
       "type": "shell",
       "command": "npx tfx-cli extension create",
       "problemMatcher": []
     },
     {
       "label": "publish (increase version)",
+      "dependsOn": "build",
       "type": "shell",
       "command": "npx tfx-cli extension create --rev-version",
       "problemMatcher": []

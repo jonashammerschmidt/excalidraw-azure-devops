@@ -2,7 +2,7 @@
   "manifestVersion": 1,
   "id": "excalidraw-dev",
   "publisher": "JonasHammerschmidt",
-  "version": "0.0.7",
+  "version": "0.0.16",
   "name": "Excalidraw (Dev)",
   "description": "View and edit Excalidraw drawings in Azure DevOps",
   "public": false,
@@ -67,6 +67,10 @@
       "addressable": true
     },
     {
+      "path": "dist",
+      "addressable": true
+    },
+    {
       "path": "images/logos",
       "addressable": true
     },
@@ -74,6 +78,11 @@
       "path": "node_modules/azure-devops-extension-sdk",
       "addressable": true,
       "packagePath": "lib"
+    },
+    {
+      "path": "node_modules/@excalidraw/excalidraw/dist/prod",
+      "addressable": true,
+      "packagePath": "excalidraw-dist-prod"
     }
   ]
 }

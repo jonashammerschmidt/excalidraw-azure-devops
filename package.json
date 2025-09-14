@@ -4,12 +4,18 @@
   "description": "View and edit Excalidraw drawings in Azure DevOps",
   "main": "index.js",
   "scripts": {
-    "test": "echo \"Error: no test specified\" && exit 1"
+    "build": "esbuild src/drawings.tsx --bundle --platform=browser --format=iife --global-name=DrawingsApp --loader:.ts=ts --loader:.tsx=tsx --define:process.env.NODE_ENV='\"production\"' --banner:js=\"var __oldDefine = window.define; try{window.define=void 0;}catch{}\" --footer:js=\"try{window.define=__oldDefine;}catch{}\" --outfile=dist/drawings.bundle.js"
   },
   "keywords": [],
   "author": "",
   "license": "ISC",
   "dependencies": {
-    "azure-devops-extension-sdk": "^4.1.0"
+    "@excalidraw/excalidraw": "^0.18.0",
+    "azure-devops-extension-sdk": "^4.1.0",
+    "react": "^18.3.1",
+    "react-dom": "^18.3.1"
+  },
+  "devDependencies": {
+    "esbuild": "^0.25.9"
   }
 }
