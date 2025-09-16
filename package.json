@@ -4,18 +4,54 @@
   "description": "View and edit Excalidraw drawings in Azure DevOps",
   "main": "index.js",
   "scripts": {
-    "build": "esbuild src/drawings.tsx --bundle --platform=browser --format=iife --global-name=DrawingsApp --loader:.ts=ts --loader:.tsx=tsx --define:process.env.NODE_ENV='\"production\"' --banner:js=\"var __oldDefine = window.define; try{window.define=void 0;}catch{}\" --footer:js=\"try{window.define=__oldDefine;}catch{}\" --outfile=dist/drawings.bundle.js"
+    "ng": "ng",
+    "start": "ng serve",
+    "build": "ng build --configuration production",
+    "watch": "ng build --watch --configuration development",
+    "test": "ng test"
   },
-  "keywords": [],
-  "author": "",
-  "license": "ISC",
+  "prettier": {
+    "printWidth": 100,
+    "singleQuote": true,
+    "overrides": [
+      {
+        "files": "*.html",
+        "options": {
+          "parser": "angular"
+        }
+      }
+    ]
+  },
+  "private": true,
   "dependencies": {
+    "@angular/common": "^20.3.0",
+    "@angular/compiler": "^20.3.0",
+    "@angular/core": "^20.3.0",
+    "@angular/forms": "^20.3.0",
+    "@angular/platform-browser": "^20.3.0",
+    "@angular/router": "^20.3.0",
     "@excalidraw/excalidraw": "^0.18.0",
+    "@r2wc/react-to-web-component": "^2.1.0",
+    "azure-devops-extension-api": "^4.259.0",
     "azure-devops-extension-sdk": "^4.1.0",
     "react": "^18.3.1",
-    "react-dom": "^18.3.1"
+    "react-dom": "^18.3.1",
+    "rxjs": "~7.8.0",
+    "tslib": "^2.3.0"
   },
   "devDependencies": {
-    "esbuild": "^0.25.9"
+    "@angular/build": "^20.3.1",
+    "@angular/cli": "^20.3.1",
+    "@angular/compiler-cli": "^20.3.0",
+    "@types/jasmine": "~5.1.0",
+    "@types/react": "^19.1.13",
+    "@types/react-dom": "^19.1.9",
+    "jasmine-core": "~5.9.0",
+    "karma": "~6.4.0",
+    "karma-chrome-launcher": "~3.2.0",
+    "karma-coverage": "~2.2.0",
+    "karma-jasmine": "~5.1.0",
+    "karma-jasmine-html-reporter": "~2.1.0",
+    "typescript": "~5.9.2"
   }
 }

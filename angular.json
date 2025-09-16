@@ -1,0 +1,122 @@
+{
+  "$schema": "./node_modules/@angular/cli/lib/config/schema.json",
+  "version": 1,
+  "newProjectRoot": "projects",
+  "projects": {
+    "excalidraw-azure-devops": {
+      "projectType": "application",
+      "schematics": {
+        "@schematics/angular:component": {
+          "style": "scss"
+        }
+      },
+      "root": "",
+      "sourceRoot": "src",
+      "prefix": "app",
+      "architect": {
+        "build": {
+          "builder": "@angular/build:application",
+          "options": {
+            "browser": "src/main.ts",
+            "tsConfig": "tsconfig.app.json",
+            "inlineStyleLanguage": "scss",
+            "assets": [
+              {
+                "glob": "**/*",
+                "input": "public"
+              }
+            ],
+            "styles": [
+              "src/styles.scss"
+            ],
+            "allowedCommonJsDependencies": [
+              "react",
+              "react-dom",
+              "react/jsx-runtime",
+              "@r2wc/react-to-web-component",
+              "@braintree/sanitize-url",
+              "dompurify",
+              "dayjs",
+              "dayjs/plugin/isoWeek",
+              "dayjs/plugin/customParseFormat",
+              "dayjs/plugin/advancedFormat",
+              "elkjs",
+              "cytoscape-cose-bilkent",
+              "png-chunks-extract",
+              "png-chunk-text",
+              "png-chunks-encode",
+              "lodash.throttle",
+              "lodash.debounce",
+              "es6-promise-pool",
+              "pica",
+              "fuzzy",
+              "canvas-roundrect-polyfill",
+              "@excalidraw/markdown-to-text",
+              "use-sync-external-store"
+            ]
+          },
+          "configurations": {
+            "production": {
+              "budgets": [
+                {
+                  "type": "initial",
+                  "maximumWarning": "2MB",
+                  "maximumError": "2500kB"
+                },
+                {
+                  "type": "anyComponentStyle",
+                  "maximumWarning": "4kB",
+                  "maximumError": "8kB"
+                }
+              ],
+              "fileReplacements": [
+                {
+                  "replace": "src/environments/environment.ts",
+                  "with": "src/environments/environment.prod.ts"
+                }
+              ],
+              "outputHashing": "all"
+            },
+            "development": {
+              "optimization": false,
+              "extractLicenses": false,
+              "sourceMap": true
+            }
+          },
+          "defaultConfiguration": "production"
+        },
+        "serve": {
+          "builder": "@angular/build:dev-server",
+          "configurations": {
+            "production": {
+              "buildTarget": "excalidraw-azure-devops:build:production"
+            },
+            "development": {
+              "buildTarget": "excalidraw-azure-devops:build:development"
+            }
+          },
+          "defaultConfiguration": "development"
+        },
+        "extract-i18n": {
+          "builder": "@angular/build:extract-i18n"
+        },
+        "test": {
+          "builder": "@angular/build:karma",
+          "options": {
+            "tsConfig": "tsconfig.spec.json",
+            "inlineStyleLanguage": "scss",
+            "assets": [
+              {
+                "glob": "**/*",
+                "input": "public"
+              }
+            ],
+            "styles": [
+              "src/styles.scss"
+            ]
+          }
+        }
+      }
+    }
+  }
+}
