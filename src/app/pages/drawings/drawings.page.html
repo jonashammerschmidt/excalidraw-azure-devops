@@ -16,6 +16,8 @@
                     <th>
                         <span>Last Changed</span>
                     </th>
+                    <th style="width: 32px;">
+                    </th>
                 </tr>
             </thead>
             <tbody>
@@ -26,6 +28,9 @@
                     </td>
                     <td>
                         <span>{{drawing.updatedAt | date: 'mediumDate'}} - {{drawing.updatedAt | date: 'shortTime'}}</span>
+                    </td>
+                    <td class="menu-cell">
+                        <app-kebab-menu (rename)="rename(drawing)" (delete)="delete(drawing)" (click)="$event.stopPropagation()"></app-kebab-menu>
                     </td>
                 </tr>
                 }

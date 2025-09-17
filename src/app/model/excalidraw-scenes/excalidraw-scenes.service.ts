@@ -53,6 +53,11 @@ export class ExcalidrawScenesService {
     return updatedMeta;
   }
 
+  public async deleteScene(sceneId: string): Promise<void> {
+    await this.data.deleteDocument(META_COLLECTION, sceneId);
+    await this.data.deleteDocument(ELEMENTS_COLLECTION, sceneId);
+  }
+
   public async loadSceneMeta(id: string): Promise<SceneMeta | undefined> {
     return this.data.readDocument<SceneMeta>(META_COLLECTION, id);
   }

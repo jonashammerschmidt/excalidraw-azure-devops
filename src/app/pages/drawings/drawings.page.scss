@@ -24,7 +24,6 @@
             border-collapse: separate;
             border-spacing: 0;
             border-radius: 8px;
-            overflow: hidden;
             box-shadow: 0 2px 6px #00000014;
             font-family: sans-serif;
             background-color: var(--background-color, rgba(255, 255, 255, 1));
@@ -56,6 +55,18 @@
 
                     &:hover {
                         background-color: var(--component-grid-row-hover-color, rgba(0, 0, 0, 0.02));
+                    }
+
+                    .menu-cell app-kebab-menu {
+                        opacity: 0;
+                        pointer-events: none;
+                        transition: opacity 0.15s;
+                    }
+
+                    &:hover .menu-cell app-kebab-menu,
+                    &:focus-within .menu-cell app-kebab-menu {
+                        opacity: 1;
+                        pointer-events: auto;
                     }
                 }
             }

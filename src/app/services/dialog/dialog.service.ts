@@ -10,9 +10,9 @@ const GLOBAL_MESSAGES_SERVICE_ID = "ms.vss-tfs-web.tfs-global-messages-service";
 export class DialogService {
     azureDevOpsSdkService = inject(AzureDevOpsSdkService);
 
-    public async promptInput(initialValue?: string): Promise<string | null> {
+    public async promptInput(title: string, label: string, initialValue?: string): Promise<string | null> {
         if (!environment.production) {
-            return prompt("Enter drawing name:");
+            return prompt(label, initialValue);
         }
 
         const sdk = this.azureDevOpsSdkService.sdk()!;
@@ -23,9 +23,9 @@ export class DialogService {
 
         return new Promise((resolve) => {
             hostPageLayoutService.openCustomDialog<string | null>(contributionId, {
-                title: "New drawing",
+                title,
                 configuration: {
-                    message: "Drawing name",
+                    message: label,
                     initialValue: initialValue,
                 },
                 onClose: (result) => {

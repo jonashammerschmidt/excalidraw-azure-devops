@@ -3,12 +3,13 @@ import { ExcalidrawScenesService, SceneMeta } from '../../model/excalidraw-scene
 import { newGuid } from '../../helpers/utils/guid.helper';
 import { DatePipe } from '@angular/common';
 import { DialogService } from '../../services/dialog/dialog.service';
+import { KebabMenuComponent } from '../../components/kebab-menu/kebab-menu.component';
 
 @Component({
   selector: 'app-drawings',
   templateUrl: './drawings.page.html',
   styleUrl: './drawings.page.scss',
-  imports: [DatePipe],
+  imports: [DatePipe, KebabMenuComponent],
 })
 export class DrawingsPage {
 
@@ -24,7 +25,7 @@ export class DrawingsPage {
   }
 
   async add(): Promise<void> {
-    const name = await this.dialogService.promptInput();
+    const name = await this.dialogService.promptInput("New drawing", "Drawing name");
     if (!name || name.trim().length === 0) {
       return;
     }
@@ -37,5 +38,42 @@ export class DrawingsPage {
       __etag: 0,
     });
     this.drawingIdSelected.emit(drawingId);
+  }
+
+  async rename(sceneMeta: SceneMeta): Promise<void> {
+    const name = await this.dialogService.promptInput("Rename drawing", "New drawing name", sceneMeta.name);
+    if (!name || name === sceneMeta.name) {
+      return;
+    }
+
+    const scene = await this.extensionDataService.loadScene(sceneMeta.id);
+    if (!scene) {
+      return;
+    }
+
+    scene.name = name;
+
+    this.extensionDataService.saveScene(scene);
+    this.dialogService.openToast("Drawing renamed.");
+
+    setTimeout(() => {
+      void this.ngOnInit();
+    }, 250);
+  }
+
+  async delete(sceneMeta: SceneMeta): Promise<void> {
+    const name = await this.dialogService.promptInput(
+      "Delete drawing",
+      "Enter drawing name \"" + sceneMeta.name + "\" to confirm deletion");
+    if (!name || name !== sceneMeta.name) {
+      return;
+    }
+
+    this.extensionDataService.deleteScene(sceneMeta.id);
+    this.dialogService.openToast("Drawing deleted.");
+
+    setTimeout(() => {
+      void this.ngOnInit();
+    }, 250);
   }
 }

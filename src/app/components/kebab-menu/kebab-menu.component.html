@@ -1,0 +1,10 @@
+<button class="btn" (click)="toggle()">
+    <span class="icon"></span>
+</button>
+
+@if (open()) {
+<div class="menu">
+    <button class="item" (click)="onRename()">Rename</button>
+    <button class="item" (click)="onDelete()">Delete</button>
+</div>
+}

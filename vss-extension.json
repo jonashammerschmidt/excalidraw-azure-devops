@@ -2,7 +2,7 @@
   "manifestVersion": 1,
   "id": "excalidraw-dev",
   "publisher": "JonasHammerschmidt",
-  "version": "0.0.66",
+  "version": "0.0.69",
   "name": "Excalidraw (Dev)",
   "description": "View and edit Excalidraw drawings in Azure DevOps",
   "public": false,
