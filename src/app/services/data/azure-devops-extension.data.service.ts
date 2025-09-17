@@ -13,14 +13,14 @@ export class AzureDevOpsExtensionDataService implements IDataService {
 
     public async initialize(): Promise<void> {
         if (this.extensionDataManager) {
-            console.warn("Data service already initialized");
+            console.warn("[IDataService] Data service already initialized");
             return;
         }
 
         await this.sdkService.initialize();
         const sdk = this.sdkService.sdk();
         if (!sdk) {
-            console.warn("Failed to initialize data service: SDK not provided");
+            console.warn("[IDataService] Failed to initialize data service: SDK not provided");
             return;
         }
 
@@ -47,8 +47,8 @@ export class AzureDevOpsExtensionDataService implements IDataService {
         } catch (e: any) {
             // Check for specific exception type
             if (e.serverError?.typeKey === "DocumentCollectionDoesNotExistException") {
-                console.warn(`Collection ${collectionName} does not exist or contains no documents.`); // expect no documents for new collections
-                console.log(`Collection ${collectionName} is missing or empty.`, {
+                console.warn(`[IDataService] Collection ${collectionName} does not exist or contains no documents.`); // expect no documents for new collections
+                console.log(`[IDataService] Collection ${collectionName} is missing or empty.`, {
                     properties: { collectionName },
                 });
                 if (throwCollectionDoesNotExistException) {
@@ -57,7 +57,7 @@ export class AzureDevOpsExtensionDataService implements IDataService {
                 return [];
             }
 
-            console.error(e);
+            console.error("[IDataService] ", e);
             data = [];
         }
         return data;
@@ -74,7 +74,7 @@ export class AzureDevOpsExtensionDataService implements IDataService {
         try {
             data = await this.extensionDataManager!.getDocument(collectionName, id, isPrivate ? { scopeType: "User" } : undefined);
         } catch (e) {
-            console.error(e, { collectionName, id });
+            console.error("[IDataService] ", e, { collectionName, id });
             data = undefined;
         }
 
@@ -103,7 +103,7 @@ export class AzureDevOpsExtensionDataService implements IDataService {
         try {
             updatedData = await this.extensionDataManager!!.updateDocument(collectionName, data, isPrivate ? { scopeType: "User" } : undefined);
         } catch (e) {
-            console.error(e);
+            console.error("[IDataService] ", e);
             updatedData = undefined;
         }
 
@@ -125,7 +125,7 @@ export class AzureDevOpsExtensionDataService implements IDataService {
         try {
             return this.extensionDataManager!.setValue(id, data, isPrivate ? { scopeType: "User" } : undefined);
         } catch (e) {
-            console.error(e);
+            console.error("[IDataService] ", e);
             updatedData = undefined;
         }
 
@@ -140,7 +140,7 @@ export class AzureDevOpsExtensionDataService implements IDataService {
         try {
             data = await this.extensionDataManager!.getValue<T>(id, isPrivate ? { scopeType: "User" } : undefined);
         } catch (e) {
-            console.error(e);
+            console.error("[IDataService] ", e);
             data = undefined;
         }
 

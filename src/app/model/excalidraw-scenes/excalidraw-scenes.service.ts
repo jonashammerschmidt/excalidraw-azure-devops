@@ -11,14 +11,13 @@ export type SceneDocument = {
 };
 
 export const COLLECTION = "excalidraw-scenes";
-export const DEFAULT_DOC_ID = "default";
 
 @Injectable({ providedIn: 'root' })
 export class ExcalidrawScenesService {
 
     extensionDataService = inject<IDataService>(DATA_SERVICE);
 
-    async loadScene(id = DEFAULT_DOC_ID): Promise<SceneDocument | undefined> {
+    async loadScene(id: string): Promise<SceneDocument | undefined> {
         return this.extensionDataService.readDocument<SceneDocument>(COLLECTION, id);
     }
 

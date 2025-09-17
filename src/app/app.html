@@ -1,6 +1,6 @@
-@if (elements()) {
-    <app-excalidraw-adapter [(elements)]="elements()!.elements"></app-excalidraw-adapter>
-}
-@else {
-    <p>Loading…</p>
+@let _drawingId = drawingId.value();
+@if (_drawingId) {
+  <app-drawing [drawingId]="_drawingId" (close)="drawingId.set(null)"></app-drawing>
+} @else {
+  <app-drawings (drawingIdSelected)="drawingId.set($event)"></app-drawings>
 }

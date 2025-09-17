@@ -1,0 +1,18 @@
+<div class="page">
+    <div class="headline">
+        <h2>Drawing: {{name()}}</h2>
+        <div class="divider"></div>
+        <div>
+            <button class="azure-devops-button azure-devops-button-secondary" (click)="close.emit()">Close</button>
+            <button class="azure-devops-button">Save</button>
+        </div>
+    </div>
+    <div class="content">
+        @if (elements) {
+            <app-excalidraw-adapter [(elements)]="elements"></app-excalidraw-adapter>
+        }
+        @else {
+            <p>Loading…</p>
+        }
+    </div>
+</div>

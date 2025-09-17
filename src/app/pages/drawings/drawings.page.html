@@ -1,0 +1,33 @@
+<div class="page">
+    <div class="headline">
+        <h2>Drawings</h2>
+        <div class="divider"></div>
+        <div>
+            <button class="azure-devops-button">Add</button>
+        </div>
+    </div>
+    <table style="width: 100%;">
+        <thead>
+            <tr>
+                <th>
+                    <span class="">Name</span>
+                </th>
+                <th>
+                    <span class="">Last Changed</span>
+                </th>
+            </tr>
+        </thead>
+        <tbody>
+            @for (drawing of drawings; track drawing.id) {
+            <tr (click)="drawingIdSelected.emit(drawing.id)">
+                <td>
+                    <span>{{drawing.id}}</span>
+                </td>
+                <td>
+                    <span></span>
+                </td>
+            </tr>
+            }
+        </tbody>
+    </table>
+</div>
