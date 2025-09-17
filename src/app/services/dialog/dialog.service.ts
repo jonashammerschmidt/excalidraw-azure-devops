@@ -1,15 +1,16 @@
 import { inject, Injectable } from '@angular/core';
 import { AzureDevOpsSdkService } from '../azure-devops-sdk/azure-devops-sdk.service';
-import { IHostPageLayoutService } from 'azure-devops-extension-api';
+import { IGlobalMessagesService, IHostPageLayoutService } from 'azure-devops-extension-api';
 import { environment } from '../../../environments/environment';
 
 const HOST_PAGE_LAYOUT_SERVICE_ID = "ms.vss-features.host-page-layout-service";
+const GLOBAL_MESSAGES_SERVICE_ID = "ms.vss-tfs-web.tfs-global-messages-service";
 
 @Injectable({ providedIn: 'root' })
 export class DialogService {
     azureDevOpsSdkService = inject(AzureDevOpsSdkService);
 
-    public async promptForDrawingName(initialDrawingName?: string): Promise<string | null> {
+    public async promptInput(initialValue?: string): Promise<string | null> {
         if (!environment.production) {
             return prompt("Enter drawing name:");
         }
@@ -25,12 +26,26 @@ export class DialogService {
                 title: "New drawing",
                 configuration: {
                     message: "Drawing name",
-                    initialValue: initialDrawingName
+                    initialValue: initialValue,
                 },
                 onClose: (result) => {
                     resolve(result ?? null);
                 }
             });
         });
+    }
+
+    public async openToast(text: string): Promise<void> {
+        if (!environment.production) {
+            alert(text);
+        }
+
+        const sdk = this.azureDevOpsSdkService.sdk()!;
+        const globalMessagesService = await sdk.getService<IGlobalMessagesService>(GLOBAL_MESSAGES_SERVICE_ID);
+
+        globalMessagesService.addToast({
+            duration: 1000,
+            message: text,
+        })
     }
 }

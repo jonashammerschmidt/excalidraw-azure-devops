@@ -4,6 +4,7 @@ import { ExcalidrawElementState } from './helper/excalidraw-element-state';
 import { OrderedExcalidrawElement } from '@excalidraw/excalidraw/element/types';
 import { ExcalidrawAdapterComponent } from '../../components/excalidraw-adapter/excalidraw-adapter.component';
 import { toObservable } from '@angular/core/rxjs-interop';
+import { DialogService } from '../../services/dialog/dialog.service';
 
 @Component({
   selector: 'app-drawing',
@@ -14,6 +15,7 @@ import { toObservable } from '@angular/core/rxjs-interop';
 export class DrawingPage {
 
   extensionDataService = inject(ExcalidrawScenesService);
+  dialogService = inject(DialogService);
   injector = inject(Injector);
 
   drawingId = input.required<string>();
@@ -55,5 +57,7 @@ export class DrawingPage {
     });
 
     this.etag.update(etag => etag + 1);
+
+    this.dialogService.openToast("All changes saved.");
   }
 }

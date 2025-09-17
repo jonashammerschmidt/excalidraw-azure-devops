@@ -5,6 +5,11 @@
   <script src="https://cdnjs.cloudflare.com/ajax/libs/require.js/2.3.6/require.min.js"></script>
   <style>
     body {
+      display: flex;
+      flex-direction: column;
+      height: 144px;
+      margin: 0;
+
       color: var(--text-primary-color, rgba(0, 0, 0, .9));
 
       font-family: "Segoe UI VSS (Regular)", "Segoe UI", "-apple-system", BlinkMacSystemFont, Roboto, "Helvetica Neue",
@@ -35,6 +40,10 @@
       padding: 5px 11px;
       resize: none;
       color: var(--text-primary-color, rgba(1, 1, 1, .9));
+    }
+
+    .divider {
+      flex-grow: 1;
     }
 
     .buttons {
@@ -91,7 +100,7 @@
   <div class="input">
     <input id="input" type="text" autofocus />
   </div>
-  <br>
+  <div class="divider"></div>
   <div class="buttons">
     <button id="cancel" class="azure-devops-button azure-devops-button-secondary">Cancel</button>
     <button id="save" class="azure-devops-button">Save</button>

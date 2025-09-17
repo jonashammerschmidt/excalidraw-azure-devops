@@ -24,7 +24,7 @@ export class DrawingsPage {
   }
 
   async add(): Promise<void> {
-    const name = await this.dialogService.promptForDrawingName();
+    const name = await this.dialogService.promptInput();
     if (!name || name.trim().length === 0) {
       return;
     }
