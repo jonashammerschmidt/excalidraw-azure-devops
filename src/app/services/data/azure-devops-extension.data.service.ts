@@ -85,14 +85,14 @@ export class AzureDevOpsExtensionDataService implements IDataService {
      * Create user/account scoped document.
      */
     public async createDocument<T>(collectionName: string, data: T, isPrivate?: boolean): Promise<T | undefined> {
-        return this.extensionDataManager!.createDocument(collectionName, data, isPrivate ? { scopeType: "User" } : undefined);
+        return await this.extensionDataManager!.createDocument(collectionName, data, isPrivate ? { scopeType: "User" } : undefined);
     }
 
     /**
      * Create or Update user/account scoped document.
      */
     public async createOrUpdateDocument<T>(collectionName: string, data: T, isPrivate?: boolean): Promise<T | undefined> {
-        return this.extensionDataManager!.setDocument(collectionName, data, isPrivate ? { scopeType: "User" } : undefined);
+        return await this.extensionDataManager!.setDocument(collectionName, data, isPrivate ? { scopeType: "User" } : undefined);
     }
 
     /**
@@ -114,7 +114,7 @@ export class AzureDevOpsExtensionDataService implements IDataService {
      * Delete user/account scoped document.
      */
     public async deleteDocument(collectionName: string, id: string, isPrivate?: boolean): Promise<void> {
-        return this.extensionDataManager!.deleteDocument(collectionName, id, isPrivate ? { scopeType: "User" } : undefined);
+        return await this.extensionDataManager!.deleteDocument(collectionName, id, isPrivate ? { scopeType: "User" } : undefined);
     }
 
     /**
@@ -123,7 +123,7 @@ export class AzureDevOpsExtensionDataService implements IDataService {
     public async setValue<T>(id: string, data: T, isPrivate?: boolean): Promise<T | undefined> {
         let updatedData: T | undefined;
         try {
-            return this.extensionDataManager!.setValue(id, data, isPrivate ? { scopeType: "User" } : undefined);
+            return await this.extensionDataManager!.setValue(id, data, isPrivate ? { scopeType: "User" } : undefined);
         } catch (e) {
             console.error("[IDataService] ", e);
             updatedData = undefined;

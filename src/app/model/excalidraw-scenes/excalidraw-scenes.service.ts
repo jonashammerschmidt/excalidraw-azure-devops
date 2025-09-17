@@ -22,10 +22,10 @@ export const ELEMENTS_COLLECTION = 'excalidraw-scene-elements';
 
 @Injectable({ providedIn: 'root' })
 export class ExcalidrawScenesService {
-  private readonly data = inject<IDataService>(DATA_SERVICE);
+  private readonly dataService = inject<IDataService>(DATA_SERVICE);
 
   public async listScenes(): Promise<SceneMeta[]> {
-    return this.data.readDocuments<SceneMeta>(META_COLLECTION);
+    return await this.dataService.readDocuments<SceneMeta>(META_COLLECTION);
   }
 
   public async loadScene(id: string): Promise<SceneDocument | undefined> {
@@ -49,24 +49,24 @@ export class ExcalidrawScenesService {
       __etag
     };
 
-    const updatedMeta = await this.data.createOrUpdateDocument<SceneMeta>(META_COLLECTION, meta);
+    const updatedMeta = await this.dataService.createOrUpdateDocument<SceneMeta>(META_COLLECTION, meta);
     return updatedMeta;
   }
 
   public async deleteScene(sceneId: string): Promise<void> {
-    await this.data.deleteDocument(META_COLLECTION, sceneId);
-    await this.data.deleteDocument(ELEMENTS_COLLECTION, sceneId);
+    await this.dataService.deleteDocument(META_COLLECTION, sceneId);
+    await this.dataService.deleteDocument(ELEMENTS_COLLECTION, sceneId);
   }
 
   public async loadSceneMeta(id: string): Promise<SceneMeta | undefined> {
-    return this.data.readDocument<SceneMeta>(META_COLLECTION, id);
+    return await this.dataService.readDocument<SceneMeta>(META_COLLECTION, id);
   }
 
   public async loadSceneElements(sceneId: string): Promise<SceneElementsDoc | undefined> {
-    return this.data.readDocument<SceneElementsDoc>(ELEMENTS_COLLECTION, sceneId);
+    return await this.dataService.readDocument<SceneElementsDoc>(ELEMENTS_COLLECTION, sceneId);
   }
 
   private async saveSceneElements(doc: SceneElementsDoc): Promise<SceneElementsDoc | undefined> {
-    return this.data.createOrUpdateDocument<SceneElementsDoc>(ELEMENTS_COLLECTION, doc);
+    return await this.dataService.createOrUpdateDocument<SceneElementsDoc>(ELEMENTS_COLLECTION, doc);
   }
 }

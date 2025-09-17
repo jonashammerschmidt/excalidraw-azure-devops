@@ -53,12 +53,9 @@ export class DrawingsPage {
 
     scene.name = name;
 
-    this.extensionDataService.saveScene(scene);
+    await this.extensionDataService.saveScene(scene);
+    await this.ngOnInit();
     this.dialogService.openToast("Drawing renamed.");
-
-    setTimeout(() => {
-      void this.ngOnInit();
-    }, 250);
   }
 
   async delete(sceneMeta: SceneMeta): Promise<void> {
@@ -69,11 +66,8 @@ export class DrawingsPage {
       return;
     }
 
-    this.extensionDataService.deleteScene(sceneMeta.id);
+    await this.extensionDataService.deleteScene(sceneMeta.id);
+    await this.ngOnInit();
     this.dialogService.openToast("Drawing deleted.");
-
-    setTimeout(() => {
-      void this.ngOnInit();
-    }, 250);
   }
 }
