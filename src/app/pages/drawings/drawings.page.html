@@ -3,7 +3,7 @@
         <h2>Drawings</h2>
         <div class="divider"></div>
         <div>
-            <button class="azure-devops-button">Add</button>
+            <button class="azure-devops-button" (click)="add()">Add</button>
         </div>
     </div>
     <table style="width: 100%;">
@@ -18,13 +18,13 @@
             </tr>
         </thead>
         <tbody>
-            @for (drawing of drawings; track drawing.id) {
+            @for (drawing of drawings(); track drawing.id) {
             <tr (click)="drawingIdSelected.emit(drawing.id)">
                 <td>
-                    <span>{{drawing.id}}</span>
+                    <span>{{drawing.name}}</span>
                 </td>
                 <td>
-                    <span></span>
+                    <span>{{drawing.updatedAt}}</span>
                 </td>
             </tr>
             }

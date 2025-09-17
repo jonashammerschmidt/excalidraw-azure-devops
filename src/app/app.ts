@@ -3,6 +3,7 @@ import { DrawingPage } from './pages/drawing/drawing.page';
 import { DrawingsPage } from './pages/drawings/drawings.page';
 import { ExcalidrawScenesService } from './model/excalidraw-scenes/excalidraw-scenes.service';
 import { queryParamSignal } from './helpers/angular/query-params-signal.helper';
+import { DATA_SERVICE, IDataService } from './services/data/interfaces/i-data.service';
 
 @Component({
   selector: 'app-root',
@@ -11,11 +12,11 @@ import { queryParamSignal } from './helpers/angular/query-params-signal.helper';
   styleUrl: './app.scss',
 })
 export class App implements OnInit {
-  private extensionDataService = inject(ExcalidrawScenesService);
+  private dataService = inject<IDataService>(DATA_SERVICE);
 
   drawingId = queryParamSignal('drawingId');
 
   async ngOnInit(): Promise<void> {
-    await this.extensionDataService.extensionDataService.initialize();
+    await this.dataService.initialize();
   }
 }

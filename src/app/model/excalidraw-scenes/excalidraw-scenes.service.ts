@@ -2,33 +2,66 @@ import { inject, Injectable } from '@angular/core';
 import { DATA_SERVICE, IDataService } from '../../services/data/interfaces/i-data.service';
 import { OrderedExcalidrawElement } from '@excalidraw/excalidraw/element/types';
 
-export type SceneDocument = {
-    id: string,
-    name?: string,
-    updatedAt: string
-    elements: OrderedExcalidrawElement[],
-    __etag?: number
+export type SceneMeta = {
+  id: string;
+  name: string;
+  updatedAt: string;
+  __etag: number;
 };
 
-export const COLLECTION = "excalidraw-scenes";
+export type SceneElementsDoc = {
+  id: string;
+  elements: OrderedExcalidrawElement[];
+  __etag: number;
+};
+
+export type SceneDocument = SceneMeta & { elements: OrderedExcalidrawElement[] }; // convenience shape
+
+export const META_COLLECTION = 'excalidraw-scenes';
+export const ELEMENTS_COLLECTION = 'excalidraw-scene-elements';
 
 @Injectable({ providedIn: 'root' })
 export class ExcalidrawScenesService {
+  private readonly data = inject<IDataService>(DATA_SERVICE);
 
-    extensionDataService = inject<IDataService>(DATA_SERVICE);
+  public async listScenes(): Promise<SceneMeta[]> {
+    return this.data.readDocuments<SceneMeta>(META_COLLECTION);
+  }
 
-    async loadScene(id: string): Promise<SceneDocument | undefined> {
-        return this.extensionDataService.readDocument<SceneDocument>(COLLECTION, id);
-    }
+  public async loadScene(id: string): Promise<SceneDocument | undefined> {
+    const meta = await this.loadSceneMeta(id);
+    if (!meta) return undefined;
 
-    async saveScene(payload: Omit<SceneDocument, "updatedAt">): Promise<SceneDocument | undefined> {
-        const doc: SceneDocument = {
-            ...payload,
-            updatedAt: new Date().toISOString()
-        };
+    const elementsDoc = await this.loadSceneElements(id);
+    const elements = elementsDoc?.elements ?? [];
+    return { ...meta, elements };
+  }
 
-        const updated = await this.extensionDataService.createOrUpdateDocument<SceneDocument>(COLLECTION, doc);
-        return updated;
-    }
+  public async saveScene(payload: Omit<SceneDocument, 'updatedAt'>): Promise<SceneMeta | undefined> {
+    const { id, name, elements, __etag } = payload;
 
+    await this.saveSceneElements({ id, elements, __etag });
+
+    const meta: SceneMeta = {
+      id,
+      name,
+      updatedAt: new Date().toISOString(),
+      __etag
+    };
+
+    const updatedMeta = await this.data.createOrUpdateDocument<SceneMeta>(META_COLLECTION, meta);
+    return updatedMeta;
+  }
+
+  public async loadSceneMeta(id: string): Promise<SceneMeta | undefined> {
+    return this.data.readDocument<SceneMeta>(META_COLLECTION, id);
+  }
+
+  public async loadSceneElements(sceneId: string): Promise<SceneElementsDoc | undefined> {
+    return this.data.readDocument<SceneElementsDoc>(ELEMENTS_COLLECTION, sceneId);
+  }
+
+  private async saveSceneElements(doc: SceneElementsDoc): Promise<SceneElementsDoc | undefined> {
+    return this.data.createOrUpdateDocument<SceneElementsDoc>(ELEMENTS_COLLECTION, doc);
+  }
 }

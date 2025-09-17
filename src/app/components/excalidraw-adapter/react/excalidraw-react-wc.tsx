@@ -3,7 +3,7 @@ import type { OrderedExcalidrawElement } from '@excalidraw/excalidraw/element/ty
 import type { AppState, BinaryFiles, ExcalidrawInitialDataState, ExcalidrawProps } from '@excalidraw/excalidraw/types';
 import r2wc from '@r2wc/react-to-web-component';
 import { useEffect, useState } from 'react';
-import { resolveThunkOrValue } from '../../../helpers/objects/promise.helper';
+import { resolveThunkOrValue } from '../../../helpers/utils/promise.helper';
 
 declare global {
   interface Window {
