@@ -2,7 +2,7 @@
   "manifestVersion": 1,
   "id": "excalidraw-dev",
   "publisher": "JonasHammerschmidt",
-  "version": "0.0.52",
+  "version": "0.0.64",
   "name": "Excalidraw (Dev)",
   "description": "View and edit Excalidraw drawings in Azure DevOps",
   "public": false,
@@ -59,11 +59,25 @@
           "dark": "asset://images/logos/logo_navbar_dark_theme.png"
         }
       }
+    },
+    {
+      "id": "drawing-name-form",
+      "type": "ms.vss-web.external-content",
+      "description": "Dialog content with input",
+      "targets": [],
+      "properties": {
+        "uri": "drawing-name-form.html"
+      }
     }
   ],
   "files": [
     {
       "path": "dist/excalidraw-azure-devops/browser",
+      "addressable": true,
+      "packagePath": "/"
+    },
+    {
+      "path": "src/native",
       "addressable": true,
       "packagePath": "/"
     },

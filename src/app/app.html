@@ -1,6 +1,8 @@
-@let _drawingId = drawingId.value();
-@if (_drawingId) {
-  <app-drawing [drawingId]="_drawingId" (close)="drawingId.set(null)"></app-drawing>
-} @else {
-  <app-drawings (drawingIdSelected)="drawingId.set($event)"></app-drawings>
+@if (ready()) {
+  @let _drawingId = drawingId.value();
+  @if (_drawingId) {
+    <app-drawing [drawingId]="_drawingId" (close)="drawingId.set(null)"></app-drawing>
+  } @else {
+    <app-drawings (drawingIdSelected)="drawingId.set($event)"></app-drawings>
+  }
 }

@@ -14,7 +14,7 @@ declare global {
 export class AzureDevOpsSdkService {
   sdk = signal<AzureSDK | null>(null);
 
-  async initialize(): Promise<void> {
+  public async initialize(): Promise<void> {
     console.debug('[SdkService] init called');
 
     if (this.sdk() != null) {

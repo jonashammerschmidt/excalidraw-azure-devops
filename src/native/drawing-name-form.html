@@ -1,0 +1,152 @@
+<!DOCTYPE html>
+<html xmlns="http://www.w3.org/1999/xhtml">
+
+<head>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/require.js/2.3.6/require.min.js"></script>
+  <style>
+    body {
+      color: var(--text-primary-color, rgba(0, 0, 0, .9));
+
+      font-family: "Segoe UI VSS (Regular)", "Segoe UI", "-apple-system", BlinkMacSystemFont, Roboto, "Helvetica Neue",
+        Helvetica, Ubuntu, Arial, sans-serif, "Apple Color Emoji", "Segoe UI Emoji", "Segoe UI Symbol";
+    }
+
+    label {
+      display: block;
+      font-size: .875rem;
+      margin-bottom: 8px;
+    }
+
+    .input {
+      font-size: .875rem;
+      color: var(--text-primary-color, rgba(0, 0, 0, .9));
+      border-radius: 2px;
+      border: 1px solid var(--text-secondary-color, rgba(0, 0, 0, .55));
+      background-color: var(--background-color, rgba(255, 255, 255, 1));
+      overflow: hidden;
+      min-width: 64px;
+    }
+
+    input {
+      width: 100%;
+      border: none;
+      outline: none;
+      background-color: inherit;
+      padding: 5px 11px;
+      resize: none;
+      color: var(--text-primary-color, rgba(1, 1, 1, .9));
+    }
+
+    .buttons {
+      width: 100%;
+      display: flex;
+      flex-direction: row;
+      justify-content: flex-end;
+    }
+
+    .azure-devops-button {
+      margin: 2px;
+      margin-left: 8px;
+      padding: 6px 12px;
+      overflow: visible;
+      line-height: inherit;
+      background-color: var(--communication-background, rgba(0, 120, 212, 1));
+      color: var(--text-on-communication-background, rgba(255, 255, 255, 1));
+      font-weight: bold;
+      border: 1px solid transparent;
+      border-radius: 2px;
+    }
+
+    .azure-devops-button:hover {
+      background-color: rgba(0, 1, 0, );
+    }
+
+    .azure-devops-button:active {
+      background-color: rgba(0, 1, 0, );
+    }
+
+    .azure-devops-button.azure-devops-button-secondary {
+      background-color: var(--palette-black-alpha-6, rgba(0, 0, 0, 0.06));
+      color: var(--text-primary-color, rgba(0, 0, 0, 0.9));
+    }
+
+    .azure-devops-button.azure-devops-button-secondary:hover {
+      background-color: var(--palette-black-alpha-10, rgba(0, 0, 0, 0.1));
+    }
+
+    .azure-devops-button.azure-devops-button-secondary:active {
+      background-color: var(--palette-black-alpha-20, rgba(0, 0, 0, 0.2));
+    }
+
+    .azure-devops-button:disabled,
+    .azure-devops-button[disabled] {
+      background-color: var(--palette-black-alpha-6, rgba(0, 0, 0, .06));
+      color: var(--text-disabled-color, rgba(0, 0, 0, .38));
+    }
+  </style>
+</head>
+
+<body>
+  <label id="messageLabel" for="input"></label>
+  <div class="input">
+    <input id="input" type="text" autofocus />
+  </div>
+  <br>
+  <div class="buttons">
+    <button id="cancel" class="azure-devops-button azure-devops-button-secondary">Cancel</button>
+    <button id="save" class="azure-devops-button">Save</button>
+  </div>
+
+  <script>
+    window.requirejs.config({
+      enforceDefine: true,
+      paths: {
+        'SDK': './lib/SDK.min'
+      }
+    });
+    window.requirejs(['SDK'], function (SDK) {
+      if (typeof SDK !== 'undefined') {
+        console.log("SDK is defined. Trying to initialize...");
+        SDK.init();
+        SDK.ready().then(() => {
+          SDK.applyTheme({});
+          const cfg = SDK.getConfiguration();
+          const label = document.getElementById("messageLabel");
+          const input = document.getElementById("input");
+          const saveButton = document.getElementById("save");
+          const cancelButton = document.getElementById("cancel");
+          console.log('saveButton', saveButton);
+          console.log('cancelButton', cancelButton);
+
+          // Konfiguration übernehmen
+          if (cfg.message) {
+            label.textContent = cfg.message;
+          }
+          if (cfg.initialValue) {
+            input.value = cfg.initialValue;
+          }
+
+          function updateSaveButtonDisabled() {
+            console.log('check save button', input, input.value);
+            saveButton.disabled = input.value.trim().length === 0;
+          }
+
+          updateSaveButtonDisabled();
+          input.addEventListener("input", () => {
+            updateSaveButtonDisabled();
+          });
+          saveButton.addEventListener("click", () => {
+            cfg.dialog.close(input.value);
+          });
+          cancelButton.addEventListener("click", () => {
+            cfg.dialog.close();
+          });
+        });
+      } else {
+        console.log('SDK is not defined');
+      }
+    });
+  </script>
+</body>
+
+</html>

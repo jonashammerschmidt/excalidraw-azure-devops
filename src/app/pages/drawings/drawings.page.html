@@ -3,31 +3,33 @@
         <h2>Drawings</h2>
         <div class="divider"></div>
         <div>
-            <button class="azure-devops-button" (click)="add()">Add</button>
+            <button class="azure-devops-button add-icon" (click)="add()">+ New Drawing</button>
         </div>
     </div>
-    <table style="width: 100%;">
-        <thead>
-            <tr>
-                <th>
-                    <span class="">Name</span>
-                </th>
-                <th>
-                    <span class="">Last Changed</span>
-                </th>
-            </tr>
-        </thead>
-        <tbody>
-            @for (drawing of drawings(); track drawing.id) {
-            <tr (click)="drawingIdSelected.emit(drawing.id)">
-                <td>
-                    <span>{{drawing.name}}</span>
-                </td>
-                <td>
-                    <span>{{drawing.updatedAt}}</span>
-                </td>
-            </tr>
-            }
-        </tbody>
-    </table>
+    <div class="content">
+        <table style="width: 100%;">
+            <thead>
+                <tr>
+                    <th>
+                        <span>Name</span>
+                    </th>
+                    <th>
+                        <span>Last Changed</span>
+                    </th>
+                </tr>
+            </thead>
+            <tbody>
+                @for (drawing of drawings(); track drawing.id) {
+                <tr (click)="drawingIdSelected.emit(drawing.id)">
+                    <td>
+                        <span>{{drawing.name}}</span>
+                    </td>
+                    <td>
+                        <span>{{drawing.updatedAt | date: 'mediumDate'}} - {{drawing.updatedAt | date: 'shortTime'}}</span>
+                    </td>
+                </tr>
+                }
+            </tbody>
+        </table>
+    </div>
 </div>
