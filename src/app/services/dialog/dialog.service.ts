@@ -35,17 +35,37 @@ export class DialogService {
         });
     }
 
-    public async openToast(text: string): Promise<void> {
+    public async openToast(text: string, duration: number): Promise<void> {
         if (!environment.production) {
             alert(text);
+            return;
         }
 
         const sdk = this.azureDevOpsSdkService.sdk()!;
         const globalMessagesService = await sdk.getService<IGlobalMessagesService>(GLOBAL_MESSAGES_SERVICE_ID);
 
         globalMessagesService.addToast({
-            duration: 1000,
+            duration,
             message: text,
-        })
+        });
+    }
+
+    public async openToastWithAction(text: string, duration: number, action: string, onActionClick: () => void): Promise<void> {
+        if (!environment.production) {
+            if (confirm(text)) {
+                onActionClick();
+            }
+            return;
+        }
+
+        const sdk = this.azureDevOpsSdkService.sdk()!;
+        const globalMessagesService = await sdk.getService<IGlobalMessagesService>(GLOBAL_MESSAGES_SERVICE_ID);
+
+        globalMessagesService.addToast({
+            duration,
+            message: text,
+            callToAction: action,
+            onCallToActionClick: onActionClick,
+        });
     }
 }

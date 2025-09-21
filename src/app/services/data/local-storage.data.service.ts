@@ -1,8 +1,9 @@
 import { Injectable } from '@angular/core';
-import { IDataService } from './interfaces/i-data.service';
+import { IDataService, VersionMismatchError } from './interfaces/i-data.service';
 import { environment } from '../../../environments/environment';
 
 type WithId = { id: string } & Record<string, unknown>;
+type WithEtag = WithId & { __etag?: number };
 
 @Injectable()
 export class DataLocalStorageService implements IDataService {
@@ -58,37 +59,58 @@ export class DataLocalStorageService implements IDataService {
       console.warn(`[IDataService] Document ${doc.id} already exists, refusing to overwrite`);
       return undefined;
     }
-    localStorage.setItem(key, JSON.stringify(data));
-    this.debugLog('Created document', key, data);
-    return data;
+    const payload = { ...(data as object), __etag: 1 } as T;
+    localStorage.setItem(key, JSON.stringify(payload));
+    this.debugLog('Created document', key, payload);
+    return payload;
   }
 
   public async createOrUpdateDocument<T>(collectionName: string, data: T, isPrivate?: boolean): Promise<T | undefined> {
-    const doc = data as unknown as WithId;
-    if (!doc.id) {
+    const incoming = data as unknown as WithEtag;
+    if (!incoming.id) {
       console.error('[IDataService] Document must contain an id property');
       return undefined;
     }
-    const key = this.docKey(collectionName, doc.id, isPrivate);
-    localStorage.setItem(key, JSON.stringify(data));
-    this.debugLog('Created/Updated document', key, data);
-    return data;
+    const key = this.docKey(collectionName, incoming.id, isPrivate);
+    const existingRaw = localStorage.getItem(key);
+
+    if (existingRaw) {
+      const existing = JSON.parse(existingRaw) as WithEtag;
+      if (incoming.__etag === undefined || incoming.__etag !== existing.__etag) {
+        throw new VersionMismatchError();
+      }
+      const payload = { ...(data as object), __etag: (existing.__etag ?? 0) + 1 } as T;
+      localStorage.setItem(key, JSON.stringify(payload));
+      this.debugLog('Updated document (upsert)', key, payload);
+      return payload;
+    }
+
+    const created = { ...(data as object), __etag: 1 } as T;
+    localStorage.setItem(key, JSON.stringify(created));
+    this.debugLog('Created document (upsert)', key, created);
+    return created;
   }
 
   public async updateDocument<T>(collectionName: string, data: T, isPrivate?: boolean): Promise<T | undefined> {
-    const doc = data as unknown as WithId;
-    if (!doc.id) {
+    const incoming = data as unknown as WithEtag;
+    if (!incoming.id) {
       console.error('[IDataService] Document must contain an id property');
       return undefined;
     }
-    const key = this.docKey(collectionName, doc.id, isPrivate);
-    if (!localStorage.getItem(key)) {
-      console.warn(`[IDataService] Document ${doc.id} does not exist, update skipped`);
+    const key = this.docKey(collectionName, incoming.id, isPrivate);
+    const existingRaw = localStorage.getItem(key);
+    if (!existingRaw) {
+      console.warn(`[IDataService] Document ${incoming.id} does not exist, update skipped`);
       return undefined;
     }
-    localStorage.setItem(key, JSON.stringify(data));
-    this.debugLog('Updated document', key, data);
-    return data;
+    const existing = JSON.parse(existingRaw) as WithEtag;
+    if (incoming.__etag === undefined || incoming.__etag !== existing.__etag) {
+      throw new VersionMismatchError();
+    }
+    const payload = { ...(data as object), __etag: (existing.__etag ?? 0) + 1 } as T;
+    localStorage.setItem(key, JSON.stringify(payload));
+    this.debugLog('Updated document', key, payload);
+    return payload;
   }
 
   public async deleteDocument(collectionName: string, id: string, isPrivate?: boolean): Promise<void> {

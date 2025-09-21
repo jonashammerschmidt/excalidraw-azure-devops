@@ -1,7 +1,7 @@
 import { inject, Injectable, signal } from '@angular/core';
 import type { IExtensionDataManager, IExtensionDataService } from "azure-devops-extension-api";
 import { AzureDevOpsSdkService } from '../azure-devops-sdk/azure-devops-sdk.service';
-import { IDataService } from './interfaces/i-data.service';
+import { IDataService, VersionMismatchError } from './interfaces/i-data.service';
 
 const EXTENSION_DATA_SERVICE_ID = "ms.vss-features.extension-data-service";
 
@@ -92,22 +92,38 @@ export class AzureDevOpsExtensionDataService implements IDataService {
      * Create or Update user/account scoped document.
      */
     public async createOrUpdateDocument<T>(collectionName: string, data: T, isPrivate?: boolean): Promise<T | undefined> {
-        return await this.extensionDataManager!.setDocument(collectionName, data, isPrivate ? { scopeType: "User" } : undefined);
+        try {
+            return await this.extensionDataManager!.setDocument(
+                collectionName,
+                data,
+                isPrivate ? { scopeType: "User" } : undefined
+            );
+        } catch (e: unknown) {
+            if (this.isVersionMismatch(e)) {
+                throw new VersionMismatchError();
+            }
+            console.error("[IDataService] ", e);
+            return undefined;
+        }
     }
 
     /**
      * Update user/account scoped document.
      */
     public async updateDocument<T>(collectionName: string, data: T, isPrivate?: boolean): Promise<T | undefined> {
-        let updatedData: T | undefined;
         try {
-            updatedData = await this.extensionDataManager!!.updateDocument(collectionName, data, isPrivate ? { scopeType: "User" } : undefined);
-        } catch (e) {
+            return await this.extensionDataManager!!.updateDocument(
+                collectionName,
+                data,
+                isPrivate ? { scopeType: "User" } : undefined
+            );
+        } catch (e: unknown) {
+            if (this.isVersionMismatch(e)) {
+                throw new VersionMismatchError();
+            }
             console.error("[IDataService] ", e);
-            updatedData = undefined;
+            return undefined;
         }
-
-        return updatedData;
     }
 
     /**
@@ -147,5 +163,11 @@ export class AzureDevOpsExtensionDataService implements IDataService {
         return data;
     }
 
-
+    private isVersionMismatch(e: unknown): boolean {
+        if (!e || typeof e !== 'object') return false;
+        const err = e as { serverError?: { typeKey?: string }, responseText?: string, message?: string };
+        return err.serverError?.typeKey === 'InvalidDocumentVersionException'
+            || /InvalidDocumentVersionException/i.test(err.responseText ?? '')
+            || /document version does not match/i.test(err.message ?? '');
+    };
 }

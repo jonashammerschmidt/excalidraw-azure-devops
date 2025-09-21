@@ -15,10 +15,22 @@ export type SceneElementsDoc = {
   __etag: number;
 };
 
-export type SceneDocument = SceneMeta & { elements: OrderedExcalidrawElement[] }; // convenience shape
+export type SceneDocument = SceneMeta & { elements: OrderedExcalidrawElement[] };
+export type SceneDocumentForUpdate = Omit<SceneDocument, 'updatedAt'>;
 
 export const META_COLLECTION = 'excalidraw-scenes';
 export const ELEMENTS_COLLECTION = 'excalidraw-scene-elements';
+
+export function getDefaultSceneDocument(drawingId: string): SceneDocument {
+  return {
+    id: drawingId,
+    name: 'nameless',
+    updatedAt: new Date().toISOString(),
+    elements: [],
+    __etag: 0
+  };
+}
+
 
 @Injectable({ providedIn: 'root' })
 export class ExcalidrawScenesService {
@@ -37,7 +49,7 @@ export class ExcalidrawScenesService {
     return { ...meta, elements };
   }
 
-  public async saveScene(payload: Omit<SceneDocument, 'updatedAt'>): Promise<SceneMeta | undefined> {
+  public async saveScene(payload: Omit<SceneDocument, 'updatedAt'>): Promise<SceneDocument> {
     const { id, name, elements, __etag } = payload;
 
     await this.saveSceneElements({ id, elements, __etag });
@@ -49,8 +61,9 @@ export class ExcalidrawScenesService {
       __etag
     };
 
-    const updatedMeta = await this.dataService.createOrUpdateDocument<SceneMeta>(META_COLLECTION, meta);
-    return updatedMeta;
+    await this.dataService.createOrUpdateDocument<SceneMeta>(META_COLLECTION, meta);
+    meta.__etag++;
+    return { ...meta, elements };
   }
 
   public async deleteScene(sceneId: string): Promise<void> {

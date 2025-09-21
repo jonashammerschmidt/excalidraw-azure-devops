@@ -2,6 +2,14 @@ import { InjectionToken } from "@angular/core";
 
 export const DATA_SERVICE = new InjectionToken<IDataService>('DATA_SERVICE');
 
+export class VersionMismatchError extends Error {
+  readonly code = 1660003;
+  constructor() {
+    super('Document version mismatch. Refresh data and retry.');
+    this.name = 'VersionMismatchError';
+  }
+}
+
 export interface IDataService {
   initialize(): Promise<void>;
 

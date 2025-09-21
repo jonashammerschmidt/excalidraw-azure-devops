@@ -1,18 +1,37 @@
 <div class="page">
     <div class="headline">
-        <h2>Drawing: {{name()}}</h2>
+        <h2><span>Drawing</span>
+            @if (!sceneResource.isLoading()) {
+            <span>: {{sceneResource.value()?.name ?? 'loading'}}</span>
+            }
+        </h2>
         <div class="divider"></div>
+        @if (noUpdatesAllowed()) {
+        <div>
+            <span style="font-size: 1.6rem; color: red; vertical-align: middle; padding-right: 4px;">
+                ⚠
+            </span>
+        </div>
+        <div>
+            <span style="font-size: 0.9rem; color: red; vertical-align: middle;">
+                Changes not saved, document was updated by someone else. Please reload.
+            </span>
+        </div>
+        } @else {
+            <i style="font-size: 0.85rem; vertical-align: middle;">
+                Auto-save is active.
+            </i>
+        }
         <div>
             <button class="azure-devops-button azure-devops-button-secondary" (click)="close.emit()">Close</button>
-            <button class="azure-devops-button" (click)="save()">Save</button>
         </div>
     </div>
     <div class="content">
-        @if (elements) {
-            <app-excalidraw-adapter [(elements)]="elements"></app-excalidraw-adapter>
+        @if (!sceneResource.isLoading()) {
+        <app-excalidraw-adapter [(elements)]="elements"></app-excalidraw-adapter>
         }
         @else {
-            <p style="text-align: center;">Loading…</p>
+        <p style="text-align: center;">Loading…</p>
         }
     </div>
 </div>
