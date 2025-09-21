@@ -1,4 +1,4 @@
-import { CUSTOM_ELEMENTS_SCHEMA, Component, OnInit, computed, model } from '@angular/core';
+import { CUSTOM_ELEMENTS_SCHEMA, Component, OnInit, computed, model, output } from '@angular/core';
 import type { OrderedExcalidrawElement } from '@excalidraw/excalidraw/element/types';
 import { ExcalidrawState } from './react/excalidraw-react-wc';
 
@@ -11,6 +11,8 @@ import { ExcalidrawState } from './react/excalidraw-react-wc';
 export class ExcalidrawAdapterComponent implements OnInit {
 
   elements = model.required<OrderedExcalidrawElement[]>();
+  ctrlSPressed = output<void>();
+
   initialData = computed<ExcalidrawState>(() => {
     return {
       elements: this.elements(),
@@ -22,5 +24,9 @@ export class ExcalidrawAdapterComponent implements OnInit {
     window.excalidrawChange = (state: ExcalidrawState) => {
       this.elements.set([...state.elements]);
     };
+  }
+
+  onCtrlSPressed() {
+    this.ctrlSPressed.emit();
   }
 }

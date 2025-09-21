@@ -8,7 +8,7 @@ import type {
   ExcalidrawProps,
 } from '@excalidraw/excalidraw/types';
 import r2wc from '@r2wc/react-to-web-component';
-import { useEffect, useState } from 'react';
+import { KeyboardEvent, useEffect, useRef, useState } from 'react';
 import { resolveThunkOrValue } from '../../../helpers/utils/promise.helper';
 
 declare global {
@@ -31,6 +31,7 @@ export function getDefaultAppState(): Partial<AppState> {
 
 function ExcalidrawReactWc(props: ExcalidrawProps) {
   const [initialData, setInitialData] = useState<ExcalidrawInitialDataState | null>(null);
+  const rootRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
     let canceled = false;
@@ -53,17 +54,35 @@ function ExcalidrawReactWc(props: ExcalidrawProps) {
     };
   }, [props.initialData]);
 
+  const onKeyDownCapture = (e: KeyboardEvent<HTMLDivElement>) => {
+    if ((e.ctrlKey || e.metaKey) && e.key.toLowerCase() === 's') {
+      // keep it inside the component
+      e.preventDefault();
+      e.stopPropagation();
+      e.nativeEvent?.stopImmediatePropagation?.();
+
+      // bubble a composed custom event so Angular can hear it on the host element
+      rootRef.current?.dispatchEvent(new CustomEvent('ctrlSPressed', {
+        bubbles: true,
+        composed: true,
+      }));
+    }
+  };
+
   return (
-    <div style={{ width: '100%', height: '100%' }}>
+    <div
+      ref={rootRef}
+      style={{ width: '100%', height: '100%' }}
+      tabIndex={0}
+      onKeyDownCapture={onKeyDownCapture}
+    >
       {initialData && (
         <Excalidraw
           initialData={initialData}
           excalidrawAPI={(api: ExcalidrawImperativeAPI) => {
             setTimeout(() => {
               if (api.getSceneElements().length > 0) {
-                api.scrollToContent(api.getSceneElements(), {
-                  fitToContent: true,
-                });
+                api.scrollToContent(api.getSceneElements(), { fitToContent: true });
               }
             }, 0);
           }}
