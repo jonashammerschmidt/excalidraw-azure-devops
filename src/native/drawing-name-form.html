@@ -124,8 +124,6 @@
           const input = document.getElementById("input");
           const saveButton = document.getElementById("save");
           const cancelButton = document.getElementById("cancel");
-          console.log('saveButton', saveButton);
-          console.log('cancelButton', cancelButton);
 
           // Konfiguration übernehmen
           if (cfg.message) {
@@ -136,7 +134,6 @@
           }
 
           function updateSaveButtonDisabled() {
-            console.log('check save button', input, input.value);
             saveButton.disabled = input.value.trim().length === 0;
           }
 

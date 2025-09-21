@@ -33,17 +33,31 @@
       "problemMatcher": []
     },
     {
-      "label": "publish",
+      "label": "publish dev",
       "dependsOn": "build",
       "type": "shell",
-      "command": "npx tfx-cli extension create",
+      "command": "npx tfx-cli extension create --manifest-globs vss-extension-dev.json",
       "problemMatcher": []
     },
     {
-      "label": "publish (increase version)",
+      "label": "publish dev (increase version)",
       "dependsOn": "build",
       "type": "shell",
-      "command": "npx tfx-cli extension create --rev-version",
+      "command": "npx tfx-cli extension create --rev-version --manifest-globs vss-extension-dev.json",
+      "problemMatcher": []
+    },
+    {
+      "label": "publish prod",
+      "dependsOn": "build",
+      "type": "shell",
+      "command": "npx tfx-cli extension create --manifest-globs vss-extension.json",
+      "problemMatcher": []
+    },
+    {
+      "label": "publish prod (increase version)",
+      "dependsOn": "build",
+      "type": "shell",
+      "command": "npx tfx-cli extension create --rev-version --manifest-globs vss-extension.json",
       "problemMatcher": []
     }
   ]
