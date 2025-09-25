@@ -1,5 +1,5 @@
 @if (ready()) {
-  @let _drawingId = drawingId.value();
+  @let _drawingId = drawingId();
   @if (_drawingId) {
     <app-drawing [drawingId]="_drawingId" (close)="drawingId.set(null)"></app-drawing>
   } @else {
