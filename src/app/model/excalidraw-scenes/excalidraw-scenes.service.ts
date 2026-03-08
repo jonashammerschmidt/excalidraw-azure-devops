@@ -1,5 +1,5 @@
 import { inject, Injectable } from '@angular/core';
-import { DATA_SERVICE, IDataService } from '../../services/data/interfaces/i-data.service';
+import { DATA_SERVICE, IDataService, VersionMismatchError } from '../../services/data/interfaces/i-data.service';
 import { OrderedExcalidrawElement } from '@excalidraw/excalidraw/element/types';
 import { ProjectService } from '../../services/project/project.service';
 
@@ -61,7 +61,7 @@ export class ExcalidrawScenesService {
   public async saveScene(sceneDocumentForUpdate: SceneDocumentForUpdate): Promise<SceneDocument> {
     const { id, name, elements, __etag } = sceneDocumentForUpdate;
 
-    await this.saveSceneElements({ id, elements, __etag });
+    await this.saveSceneElementsWithRecovery({ id, elements, __etag });
 
     const meta: SceneMeta = {
       id,
@@ -95,5 +95,31 @@ export class ExcalidrawScenesService {
 
   private async saveSceneElements(doc: SceneElementsDoc): Promise<SceneElementsDoc | undefined> {
     return await this.dataService.createOrUpdateDocument<SceneElementsDoc>(ELEMENTS_COLLECTION, doc);
+  }
+
+  private async saveSceneElementsWithRecovery(doc: SceneElementsDoc): Promise<SceneElementsDoc | undefined> {
+    try {
+      return await this.saveSceneElements(doc);
+    } catch (error) {
+      if (!(error instanceof VersionMismatchError)) {
+        throw error;
+      }
+
+      // Recover from partial saves where elements/__etag advanced but meta/__etag did not.
+      const [latestMeta, latestElements] = await Promise.all([
+        this.loadSceneMeta(doc.id),
+        this.loadSceneElements(doc.id),
+      ]);
+
+      const hasRealConflict = latestMeta?.__etag !== undefined && latestMeta.__etag !== doc.__etag;
+      if (hasRealConflict) {
+        throw error;
+      }
+
+      return await this.saveSceneElements({
+        ...doc,
+        __etag: latestElements?.__etag ?? doc.__etag,
+      });
+    }
   }
 }
