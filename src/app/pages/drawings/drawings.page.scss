@@ -31,12 +31,32 @@
 
             thead {
                 th {
-                    text-align: left;
-                    padding: 12px 16px;
-                    font-weight: 600;
-                    font-size: 0.8em;
-                    color: var(--text-secondary-color, rgba(0, 0, 0, 0.55));
+                    padding: 0;
                     border-bottom: 1px solid var(--component-grid-cell-bottom-border-color, rgba(234, 234, 234, 1));
+
+                    .sort-button {
+                        display: flex;
+                        align-items: center;
+                        gap: 8px;
+                        width: 100%;
+                        padding: 12px 16px;
+                        border: none;
+                        background: transparent;
+                        text-align: left;
+                        font-weight: 600;
+                        font-size: 0.8em;
+                        color: var(--text-secondary-color, rgba(0, 0, 0, 0.55));
+                        cursor: pointer;
+
+                        &.active {
+                            color: var(--text-primary-color, rgba(0, 0, 0, 0.9));
+                        }
+
+                        .sort-indicator {
+                            min-width: 12px;
+                            color: inherit;
+                        }
+                    }
                 }
             }
 

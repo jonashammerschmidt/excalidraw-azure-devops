@@ -11,17 +11,31 @@
             <thead>
                 <tr>
                     <th>
-                        <span>Name</span>
+                        <button
+                            class="sort-button"
+                            type="button"
+                            [class.active]="isSortedBy('name')"
+                            (click)="changeSort('name')">
+                            <span>Name</span>
+                            <span class="sort-indicator">{{getSortIndicator('name')}}</span>
+                        </button>
                     </th>
                     <th>
-                        <span>Last Changed</span>
+                        <button
+                            class="sort-button"
+                            type="button"
+                            [class.active]="isSortedBy('updatedAt')"
+                            (click)="changeSort('updatedAt')">
+                            <span>Last Changed</span>
+                            <span class="sort-indicator">{{getSortIndicator('updatedAt')}}</span>
+                        </button>
                     </th>
                     <th style="width: 32px;">
                     </th>
                 </tr>
             </thead>
             <tbody>
-                @for (drawing of drawings(); track drawing.id) {
+                @for (drawing of sortedDrawings(); track drawing.id) {
                 <tr (click)="drawingIdSelected.emit(drawing.id)">
                     <td>
                         <span>{{drawing.name}}</span>
