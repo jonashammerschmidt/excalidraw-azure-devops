@@ -19,6 +19,11 @@ import { deepEqual } from '../../helpers/utils/compare.helper';
 export class DrawingPage {
   private readonly excalidrawScenesService = inject(ExcalidrawScenesService);
   private readonly dialogs = inject(DialogService);
+  private readonly timeFormatter = new Intl.DateTimeFormat('de-DE', {
+    hour: '2-digit',
+    minute: '2-digit',
+    second: '2-digit',
+  });
 
   drawingId = input.required<string>();
   close = output<void>();
@@ -36,6 +41,8 @@ export class DrawingPage {
   elementsDebounced = debouncedSignal(this.elements, 500);
 
   noUpdatesAllowed = signal(false);
+  isSaving = signal(false);
+  lastSavedLabel = signal<string | null>(null);
 
   constructor() {
     const elementsInitEffectRef = effect(() => {
@@ -71,8 +78,10 @@ export class DrawingPage {
     };
 
     try {
+      this.isSaving.set(true);
       const updatedScene = await this.excalidrawScenesService.saveScene(updated);
       this.sceneResource.set(updatedScene);
+      this.lastSavedLabel.set(this.timeFormatter.format(new Date()));
     } catch (error) {
       if (error instanceof VersionMismatchError) {
         this.dialogs.openToastWithAction(
@@ -86,6 +95,8 @@ export class DrawingPage {
         this.dialogs.openToast('An unexpected error occurred. Please reload.', 15000);
         console.error(error);
       }
+    } finally {
+      this.isSaving.set(false);
     }
   }
 

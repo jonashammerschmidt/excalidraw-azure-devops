@@ -18,9 +18,19 @@
             </span>
         </div>
         } @else {
-            <i style="font-size: 0.85rem; vertical-align: middle;">
-                Auto-save is active.
-            </i>
+        <i style="font-size: 0.85rem; vertical-align: middle;">
+            <span>Auto-save is active.</span>
+
+            @if (isSaving()) {
+                <br>
+                <span>Saving...</span>
+            } @else if (lastSavedLabel()) {
+                <br>
+                <span style="font-size: 0.7rem;">
+                    Last saved: {{ lastSavedLabel() }}
+                </span>
+            }
+        </i>
         }
         <div>
             <button class="azure-devops-button azure-devops-button-secondary" (click)="close.emit()">Close</button>
