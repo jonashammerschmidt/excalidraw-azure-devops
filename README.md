@@ -28,6 +28,17 @@ Live real-time collaboration (as available on excalidraw.com) is not supported i
 
 Due to technical constraints of the Azure DevOps Extension Data Service, which does not provide socket-based or real-time communication mechanisms, implementing collaborative editing with end-to-end encryption is not feasible. In addition, maintaining a separate hosted service to enable such functionality is currently outside the scope of this project.
 
+## Debug Logging
+
+To enable debug logging inside the embedded Azure DevOps iframe, run this snippet in the browser console:
+
+```js
+document.querySelector("#skip-to-main-content > div > iframe").contentWindow?.postMessage({
+  type: 'excalidraw-azure-devops:set-debug-logging',
+  enabled: true,
+}, '*');
+```
+
 ## 🤝 Contributing
 
 Feedback, ideas, and contributions are very welcome. If you discover a bug, have a suggestion, or miss a feature, please open an issue. Pull requests are encouraged, especially for things like:

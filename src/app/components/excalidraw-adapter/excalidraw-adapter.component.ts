@@ -22,11 +22,15 @@ export class ExcalidrawAdapterComponent implements OnInit {
 
   ngOnInit(): void {
     window.excalidrawChange = (state: ExcalidrawState) => {
-      this.elements.set([...state.elements]);
+      this.elements.set(this.cloneElements(state.elements));
     };
   }
 
   onCtrlSPressed() {
     this.ctrlSPressed.emit();
+  }
+
+  private cloneElements(elements: readonly OrderedExcalidrawElement[]): OrderedExcalidrawElement[] {
+    return structuredClone([...elements]) as OrderedExcalidrawElement[];
   }
 }
