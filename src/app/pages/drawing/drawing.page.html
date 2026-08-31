@@ -9,7 +9,14 @@
             }
         </h2>
         <div class="divider"></div>
-        @if (noUpdatesAllowed()) {
+        @if (sceneResource.error()) {
+        <div>
+            <span style="font-size: 0.9rem; color: red; vertical-align: middle;">
+                Drawing could not be loaded. Check your Azure DevOps session or network connection.
+            </span>
+            <button class="azure-devops-button azure-devops-button-secondary" type="button" (click)="retryLoad()">Retry</button>
+        </div>
+        } @else if (noUpdatesAllowed()) {
         <div>
             <span style="font-size: 1.6rem; color: red; vertical-align: middle; padding-right: 4px;">
                 ⚠
@@ -19,6 +26,13 @@
             <span style="font-size: 0.9rem; color: red; vertical-align: middle;">
                 Changes not saved, document was updated by someone else. Please reload.
             </span>
+        </div>
+        } @else if (saveErrorMessage()) {
+        <div>
+            <span style="font-size: 0.9rem; color: red; vertical-align: middle;">
+                {{saveErrorMessage()}}
+            </span>
+            <button class="azure-devops-button azure-devops-button-secondary" type="button" (click)="save()">Retry</button>
         </div>
         } @else {
         <i style="font-size: 0.85rem; vertical-align: middle;">
@@ -36,12 +50,15 @@
         </i>
         }
         <div>
-            <button class="azure-devops-button azure-devops-button-secondary" (click)="close.emit()">Close</button>
+            <button class="azure-devops-button azure-devops-button-secondary" (click)="closeDrawing()">Close</button>
         </div>
     </div>
     <div class="content">
-        @if (!sceneResource.isLoading()) {
+        @if (sceneResource.hasValue()) {
         <app-excalidraw-adapter [(elements)]="elements"></app-excalidraw-adapter>
+        }
+        @else if (sceneResource.error()) {
+        <p style="text-align: center;">The drawing could not be loaded. Retry after restoring your Azure DevOps session.</p>
         }
         @else {
         <p style="text-align: center;">Loading…</p>

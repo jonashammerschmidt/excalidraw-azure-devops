@@ -5,6 +5,12 @@
         <div><button class="azure-devops-button add-icon" (click)="add()">+ New Drawing</button></div>
     </div>
     <div class="content">
+        @if (loadErrorMessage()) {
+        <div style="color: red; padding: 12px 16px;">
+            <span>{{loadErrorMessage()}}</span>
+            <button class="azure-devops-button azure-devops-button-secondary" type="button" (click)="ngOnInit()">Retry</button>
+        </div>
+        }
         <table>
             <thead>
                 <tr>

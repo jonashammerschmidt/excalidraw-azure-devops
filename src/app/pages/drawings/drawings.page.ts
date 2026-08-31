@@ -96,6 +96,7 @@ export class DrawingsPage {
 
   readonly drawingIdSelected = output<string>();
   readonly drawings = signal<SceneMeta[]>([]);
+  readonly loadErrorMessage = signal<string | null>(null);
   readonly sortState = signal<DrawingsSortState>(DEFAULT_SORT_STATE);
   readonly expandedFolderPaths = signal<ReadonlySet<string>>(new Set());
   readonly drawingTree = computed(() => createDrawingTree(this.drawings()));
@@ -104,8 +105,14 @@ export class DrawingsPage {
   ));
 
   async ngOnInit(): Promise<void> {
-    await this.loadSortState();
-    this.drawings.set(await this.extensionDataService.listScenes());
+    try {
+      await this.loadSortState();
+      this.drawings.set(await this.extensionDataService.listScenes());
+      this.loadErrorMessage.set(null);
+    } catch (error: unknown) {
+      this.loadErrorMessage.set('Drawings could not be loaded. Check your Azure DevOps session or network connection.');
+      console.error(error);
+    }
   }
 
   async add(): Promise<void> {
@@ -113,10 +120,14 @@ export class DrawingsPage {
     const name = details?.name.trim();
     if (!details || !name) return;
     const drawingId = newGuid();
-    await this.extensionDataService.saveScene({
-      id: drawingId, name, folderPath: normalizeFolderPath(details.folderPath), elements: [], __etag: 0,
-    });
-    this.drawingIdSelected.emit(drawingId);
+    try {
+      await this.extensionDataService.saveScene({
+        id: drawingId, name, folderPath: normalizeFolderPath(details.folderPath), elements: [], __etag: 0,
+      });
+      this.drawingIdSelected.emit(drawingId);
+    } catch (error: unknown) {
+      this.showOperationError('Drawing could not be created.', error);
+    }
   }
 
   async rename(sceneMeta: SceneMeta): Promise<void> {
@@ -127,13 +138,17 @@ export class DrawingsPage {
     if (!details || !name) return;
     const folderPath = normalizeFolderPath(details.folderPath);
     if (name === sceneMeta.name && folderPath === normalizeFolderPath(sceneMeta.folderPath)) return;
-    const scene = await this.extensionDataService.loadScene(sceneMeta.id);
-    if (!scene) return;
-    scene.name = name;
-    scene.folderPath = folderPath;
-    await this.extensionDataService.saveScene(scene);
-    await this.ngOnInit();
-    await this.dialogService.openToast('Drawing renamed/moved.', 1000);
+    try {
+      const scene = await this.extensionDataService.loadScene(sceneMeta.id);
+      if (!scene) return;
+      scene.name = name;
+      scene.folderPath = folderPath;
+      await this.extensionDataService.saveScene(scene);
+      await this.ngOnInit();
+      await this.dialogService.openToast('Drawing renamed/moved.', 1000);
+    } catch (error: unknown) {
+      this.showOperationError('Drawing could not be renamed or moved.', error);
+    }
   }
 
   async delete(sceneMeta: SceneMeta): Promise<void> {
@@ -141,9 +156,13 @@ export class DrawingsPage {
       'Delete drawing', `Enter drawing name "${sceneMeta.name}" to confirm deletion`,
     );
     if (!name || name !== sceneMeta.name) return;
-    await this.extensionDataService.deleteScene(sceneMeta.id);
-    await this.ngOnInit();
-    await this.dialogService.openToast('Drawing deleted.', 1000);
+    try {
+      await this.extensionDataService.deleteScene(sceneMeta.id);
+      await this.ngOnInit();
+      await this.dialogService.openToast('Drawing deleted.', 1000);
+    } catch (error: unknown) {
+      this.showOperationError('Drawing could not be deleted.', error);
+    }
   }
 
   toggleFolder(path: string): void {
@@ -164,7 +183,11 @@ export class DrawingsPage {
       ? { column, direction: currentSortState.direction === 'asc' ? 'desc' : 'asc' }
       : { column, direction: this.getDefaultDirection(column) };
     this.sortState.set(nextSortState);
-    await this.dataService.setValue(await this.getSortStorageKey(), nextSortState, true);
+    try {
+      await this.dataService.setValue(await this.getSortStorageKey(), nextSortState, true);
+    } catch (error: unknown) {
+      this.showOperationError('Sort order could not be saved.', error);
+    }
   }
 
   isSortedBy(column: SortColumn): boolean { return this.sortState().column === column; }
@@ -187,5 +210,10 @@ export class DrawingsPage {
   private isValidSortState(value: DrawingsSortState | undefined): value is DrawingsSortState {
     return value !== undefined && (value.column === 'name' || value.column === 'updatedAt')
       && (value.direction === 'asc' || value.direction === 'desc');
+  }
+
+  private showOperationError(message: string, error: unknown): void {
+    this.dialogService.openToast(`${message} Check your Azure DevOps session or network connection.`, 15000);
+    console.error(error);
   }
 }
