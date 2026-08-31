@@ -34,7 +34,6 @@ export class DrawingPage {
     params: () => this.drawingId(),
     loader: async ({ params }) => {
       const scene = await this.excalidrawScenesService.loadScene(params);
-      this.noUpdatesAllowed.set(false);
       return scene ?? getDefaultSceneDocument(params);
     },
   });
@@ -45,6 +44,16 @@ export class DrawingPage {
   noUpdatesAllowed = signal(false);
   isSaving = signal(false);
   lastSavedLabel = signal<string | null>(null);
+  saveErrorMessage = signal<string | null>(null);
+  readonly hasPendingChanges = computed(() => {
+    const scene = this.sceneResource.value();
+    return this.sceneResource.hasValue()
+      && !deepEqual(this.normalizeElements(scene?.elements), this.normalizeElements(this.elements()));
+  });
+
+  private saveInProgress: Promise<void> | null = null;
+  private saveQueued = false;
+  private autosaveReady = false;
 
   constructor() {
     const elementsInitEffectRef = effect(() => {
@@ -62,6 +71,18 @@ export class DrawingPage {
         const currentElements = this.normalizeElements(elements);
         const hasPendingChanges = this.sceneResource.hasValue()
           && !deepEqual(persistedElements, currentElements);
+
+        if (!this.autosaveReady) {
+          this.autosaveReady = this.sceneResource.hasValue()
+            && deepEqual(persistedElements, currentElements);
+          this.loggingService.debug('DrawingPage', 'Autosave waiting for initial scene synchronization', {
+            drawingId: this.drawingId(),
+            autosaveReady: this.autosaveReady,
+            persistedElementCount: persistedElements.length,
+            currentElementCount: currentElements.length,
+          });
+          return;
+        }
 
         this.loggingService.debug('DrawingPage', 'Autosave effect evaluated', {
           drawingId: this.drawingId(),
@@ -91,12 +112,55 @@ export class DrawingPage {
   }
 
   async save(): Promise<void> {
+    if (this.saveInProgress) {
+      this.saveQueued = true;
+      return await this.saveInProgress;
+    }
+
+    const saveOperation = this.runSaveQueue();
+    this.saveInProgress = saveOperation;
+    try {
+      await saveOperation;
+    } finally {
+      if (this.saveInProgress === saveOperation) {
+        this.saveInProgress = null;
+      }
+    }
+  }
+
+  async closeDrawing(): Promise<void> {
+    if (this.saveInProgress) {
+      await this.saveInProgress;
+    }
+    if (this.hasPendingChanges() && !this.noUpdatesAllowed()) {
+      await this.save();
+    }
+    if (this.hasPendingChanges()) {
+      this.dialogs.openToast('Changes are not saved yet. Retry saving before closing.', 15000);
+      return;
+    }
+    this.close.emit();
+  }
+
+  retryLoad(): void {
+    this.sceneResource.reload();
+  }
+
+  private async runSaveQueue(): Promise<void> {
+    let saveSucceeded: boolean;
+    do {
+      this.saveQueued = false;
+      saveSucceeded = await this.saveOnce();
+    } while (saveSucceeded && this.saveQueued && !this.noUpdatesAllowed());
+  }
+
+  private async saveOnce(): Promise<boolean> {
     const s = this.sceneResource.value();
     if (!s) {
       this.loggingService.debug('DrawingPage', 'Save skipped because scene is not loaded', {
         drawingId: this.drawingId(),
       });
-      return;
+      return false;
     }
 
     if (this.noUpdatesAllowed()) {
@@ -104,12 +168,13 @@ export class DrawingPage {
         drawingId: this.drawingId(),
         sceneEtag: s.__etag,
       });
-      return;
+      return false;
     }
 
     const updated: SceneDocumentForUpdate = {
       id: this.drawingId(),
       name: s.name,
+      folderPath: s.folderPath,
       elements: this.elements(),
       __etag: s.__etag,
     };
@@ -133,7 +198,9 @@ export class DrawingPage {
         ...updatedScene,
         elements: this.cloneElements(updatedScene.elements),
       });
+      this.saveErrorMessage.set(null);
       this.lastSavedLabel.set(this.timeFormatter.format(new Date()));
+      return true;
     } catch (error) {
       this.loggingService.debug('DrawingPage', 'Save failed', {
         drawingId: updated.id,
@@ -142,17 +209,19 @@ export class DrawingPage {
         errorMessage: error instanceof Error ? error.message : String(error),
       });
       if (error instanceof VersionMismatchError) {
-        this.dialogs.openToastWithAction(
-          'Your changes could not be saved because someone else updated this document. Please reload to get the latest version.',
+        this.dialogs.openToast(
+          'Your changes could not be saved because someone else updated this document. Please refresh manually to get the latest version.',
           15000,
-          'Reload',
-          () => this.sceneResource.reload(),
         );
         this.noUpdatesAllowed.set(true);
+        this.saveErrorMessage.set('Changes not saved because the document version changed.');
       } else {
-        this.dialogs.openToast('An unexpected error occurred. Please reload.', 15000);
+        const message = 'Changes not saved. Check your Azure DevOps session or network connection, then retry.';
+        this.saveErrorMessage.set(message);
+        this.dialogs.openToastWithAction(message, 15000, 'Retry', () => void this.save());
         console.error(error);
       }
+      return false;
     } finally {
       this.isSaving.set(false);
     }

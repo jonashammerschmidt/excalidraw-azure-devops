@@ -1,63 +1,65 @@
-# AGENTS.md
+# Purpose
 
-## Zweck
-Diese Datei ist die Arbeitsanweisung für Coding-Agents in diesem Repository (`excalidraw-azure-devops`).
-Ziel ist es, Änderungen konsistent, sicher und release-fähig umzusetzen.
+This repository contains an Angular 20 Azure DevOps Extension Hub for creating
+and managing Excalidraw drawings. Excalidraw is embedded through a React web
+component; drawings are persisted through an `IDataService` abstraction.
 
-## Projektkontext
-- Angular 20 Standalone App als Azure DevOps Extension Hub.
-- Excalidraw wird über React-in-Web-Component eingebettet.
-- Persistenz läuft über ein `IDataService`-Abstraktionslayer:
-  - Produktion: `AzureDevOpsExtensionDataService`
-  - Entwicklung: `DataLocalStorageService`
+The goal is to keep the editor experience, project-scoped persistence, and
+Azure DevOps extension packaging reliable while making focused, maintainable
+changes.
 
-## Wichtige Dateien
-- `/Users/jonas/dev/excalidraw-azure-devops/src/app/app.config.ts`:
-  entscheidet, welches Data-Service-Backend genutzt wird.
-- `/Users/jonas/dev/excalidraw-azure-devops/src/app/model/excalidraw-scenes/excalidraw-scenes.service.ts`:
-  zentrale Logik für Laden/Speichern/Löschen von Zeichnungen.
-- `/Users/jonas/dev/excalidraw-azure-devops/src/app/pages/drawing/drawing.page.ts`:
-  Editor-Seite inkl. Autosave, Debounce, Konfliktbehandlung.
-- `/Users/jonas/dev/excalidraw-azure-devops/src/app/pages/drawings/drawings.page.ts`:
-  Listenansicht (anlegen, umbenennen, löschen).
-- `/Users/jonas/dev/excalidraw-azure-devops/vss-extension.json`:
-  Azure DevOps Extension Manifest (Contributions, package files).
+## Working Model
 
-## Arbeitsregeln für Änderungen
-- Halte `IDataService`-Verträge strikt stabil.
-- Wenn `IDataService` geändert wird, müssen beide Implementierungen angepasst werden:
-  - `/Users/jonas/dev/excalidraw-azure-devops/src/app/services/data/azure-devops-extension.data.service.ts`
-  - `/Users/jonas/dev/excalidraw-azure-devops/src/app/services/data/local-storage.data.service.ts`
-- `__etag`/Versionslogik nicht umgehen. Konflikte müssen weiter über `VersionMismatchError` laufen.
-- Projekt-Scope beachten: Szenen dürfen nur für das aktuelle Projekt sichtbar/veränderbar sein.
-- Bestehendes UI/UX-Verhalten erhalten:
-  - Autosave bleibt Debounce-basiert.
-  - Bei Konflikt bleibt Reload-Action verfügbar.
+Follow these principles for every task:
 
-## Code-Stil
-- TypeScript mit klaren, kleinen Funktionen; keine unnötige Komplexität.
-- Bestehende Angular-Signal-Patterns (`signal`, `resource`, `effect`) fortführen.
-- Bestehende Namensgebung und Datei-Struktur beibehalten.
-- Keine großen Refactorings ohne klaren funktionalen Bedarf.
+- Understand the relevant source files before changing them.
+- Prefer minimal, focused edits over large refactorings.
+- Reuse established patterns and keep names and file structure consistent.
+- Validate changes with the project's standard commands.
+- Assume the application is already served; never start a development server.
+- Do not introduce new infrastructure, dependencies, or real-time
+  collaboration without an explicit requirement.
+- After implementing a feature, provide exactly one suggested Conventional Commit message as the final piece of information in the result. Derive it solely from the implementation conversation and work performed in the current run; do not inspect staged changes, invoke a skill or script, or gather additional information for this purpose.
 
-## Lokale Befehle
-- Entwicklung starten: `npm run start`
-- Production-Build: `npm run build`
-- Tests: `npm run test`
+## Project Structure
 
-## Validierung vor Abschluss
-- Bei jeder funktionalen Änderung mindestens `npm run build` ausführen.
-- `npm run test` ausführen, wenn Logik, State-Handling oder Datenzugriff geändert wurde.
-- Bei UI-Änderungen manuell prüfen:
-  - Zeichnung anlegen, öffnen, Autosave auslösen.
-  - Umbenennen und löschen.
-  - Query-Param-Navigation (`drawingId`) funktioniert.
+Application source: `src/app`
 
-## Extension/Release-Hinweise
-- Manifest-Änderungen in `/Users/jonas/dev/excalidraw-azure-devops/vss-extension.json` konsistent halten.
-- Build-Output-Pfad im Manifest (`dist/excalidraw-azure-devops/browser`) darf nicht brechen.
-- Native Dialog-Asset unter `/Users/jonas/dev/excalidraw-azure-devops/src/native` beachten.
+Pages: `src/app/pages`
 
-## Nicht-Ziele
-- Keine Annahme von Live-Realtime-Kollaboration.
-- Keine Einführung neuer Infrastruktur- oder Backend-Abhängigkeiten ohne explizite Anforderung.
+Reusable Angular and React adapter components: `src/app/components`
+
+Domain logic and scene persistence: `src/app/model/excalidraw-scenes`
+
+Technical and Azure DevOps services: `src/app/services`
+
+Native dialog assets: `src/native`
+
+Azure DevOps extension manifest: `vss-extension.json`
+
+Area rules: `.codex/rules`
+
+## Area Rules
+
+- Read `.codex/rules/frontend.md` for Angular, TypeScript, HTML, SCSS, or React
+  adapter changes under `src/`.
+- Read `.codex/rules/persistence.md` for changes to scenes, `IDataService`,
+  either data-service implementation, or project scoping.
+- Read `.codex/rules/tests.md` when creating or changing tests.
+- Read `.codex/rules/extension.md` for `vss-extension.json` or `src/native/`
+  changes.
+
+Do not read area rule files unless you are working in that area.
+
+## Canonical Commands
+
+Always use these commands from the repository root; do not substitute
+alternatives.
+
+- Production build: `npm run build`
+- Unit tests: `npm run test`
+
+Run `npm run build` for every functional change. Run `npm run test` when
+changing logic, state handling, persistence, or tests. For UI changes, also
+manually verify creating, opening, autosaving, renaming, and deleting a
+drawing, as well as `drawingId` query-param navigation.

@@ -7,6 +7,7 @@ import { LoggingService } from '../../services/logging/logging.service';
 export type SceneMeta = {
   id: string;
   name: string;
+  folderPath?: string;
   updatedAt: string;
   projectId: string;
   __etag: number;
@@ -61,19 +62,21 @@ export class ExcalidrawScenesService {
   }
 
   public async saveScene(sceneDocumentForUpdate: SceneDocumentForUpdate): Promise<SceneDocument> {
-    const { id, name, elements, __etag } = sceneDocumentForUpdate;
+    const { id, name, folderPath, elements, __etag } = sceneDocumentForUpdate;
     this.loggingService.debug('ExcalidrawScenesService', 'saveScene called', {
       id,
       name,
+      folderPath,
       elementCount: elements.filter(element => !element.isDeleted).length,
       etag: __etag,
     });
 
-    await this.saveSceneElementsWithRecovery({ id, elements, __etag });
+    const savedElements = await this.saveSceneElementsWithRecovery({ id, elements, __etag });
 
     const meta: SceneMeta = {
       id,
       name,
+      folderPath,
       updatedAt: new Date().toISOString(),
       projectId: await this.projectService.getCurrectProjectId(),
       __etag
@@ -84,14 +87,17 @@ export class ExcalidrawScenesService {
       projectId: meta.projectId,
       etag: meta.__etag,
     });
-    await this.dataService.createOrUpdateDocument<SceneMeta>(META_COLLECTION, meta);
-    meta.__etag++;
+    const savedMeta = this.requirePersistedDocument(
+      await this.dataService.createOrUpdateDocument<SceneMeta>(META_COLLECTION, meta),
+      META_COLLECTION,
+      id,
+    );
     this.loggingService.debug('ExcalidrawScenesService', 'saveScene finished', {
-      id: meta.id,
-      nextEtag: meta.__etag,
-      elementCount: elements.filter(element => !element.isDeleted).length,
+      id: savedMeta.id,
+      nextEtag: savedMeta.__etag,
+      elementCount: savedElements.elements.filter(element => !element.isDeleted).length,
     });
-    return { ...meta, elements };
+    return { ...savedMeta, elements: savedElements.elements };
   }
 
   public async deleteScene(sceneId: string): Promise<void> {
@@ -111,16 +117,20 @@ export class ExcalidrawScenesService {
     return await this.dataService.readDocument<SceneElementsDoc>(ELEMENTS_COLLECTION, sceneId);
   }
 
-  private async saveSceneElements(doc: SceneElementsDoc): Promise<SceneElementsDoc | undefined> {
+  private async saveSceneElements(doc: SceneElementsDoc): Promise<SceneElementsDoc> {
     this.loggingService.debug('ExcalidrawScenesService', 'Saving scene elements', {
       id: doc.id,
       etag: doc.__etag,
       elementCount: doc.elements.filter(element => !element.isDeleted).length,
     });
-    return await this.dataService.createOrUpdateDocument<SceneElementsDoc>(ELEMENTS_COLLECTION, doc);
+    return this.requirePersistedDocument(
+      await this.dataService.createOrUpdateDocument<SceneElementsDoc>(ELEMENTS_COLLECTION, doc),
+      ELEMENTS_COLLECTION,
+      doc.id,
+    );
   }
 
-  private async saveSceneElementsWithRecovery(doc: SceneElementsDoc): Promise<SceneElementsDoc | undefined> {
+  private async saveSceneElementsWithRecovery(doc: SceneElementsDoc): Promise<SceneElementsDoc> {
     try {
       return await this.saveSceneElements(doc);
     } catch (error) {
@@ -171,5 +181,12 @@ export class ExcalidrawScenesService {
 
       return await this.saveSceneElements(recoveredDoc);
     }
+  }
+
+  private requirePersistedDocument<T>(document: T | undefined, collectionName: string, id: string): T {
+    if (document === undefined) {
+      throw new Error(`Saving document ${id} in collection ${collectionName} returned no confirmation.`);
+    }
+    return document;
   }
 }

@@ -1,4 +1,4 @@
-import { inject, Injectable, signal } from '@angular/core';
+import { inject, Injectable } from '@angular/core';
 import type { IExtensionDataManager, IExtensionDataService } from "azure-devops-extension-api";
 import { AzureDevOpsSdkService } from '../azure-devops-sdk/azure-devops-sdk.service';
 import { IDataService, VersionMismatchError } from './interfaces/i-data.service';
@@ -10,6 +10,7 @@ export class AzureDevOpsExtensionDataService implements IDataService {
 
     public sdkService = inject(AzureDevOpsSdkService);
     extensionDataManager: IExtensionDataManager | null = null;
+    private refreshPromise: Promise<void> | null = null;
 
     public async initialize(): Promise<void> {
         if (this.extensionDataManager) {
@@ -20,8 +21,7 @@ export class AzureDevOpsExtensionDataService implements IDataService {
         await this.sdkService.initialize();
         const sdk = this.sdkService.sdk();
         if (!sdk) {
-            console.warn("[IDataService] Failed to initialize data service: SDK not provided");
-            return;
+            throw new Error("[IDataService] Failed to initialize data service: SDK not provided");
         }
 
         // Use the global SDK
@@ -42,11 +42,12 @@ export class AzureDevOpsExtensionDataService implements IDataService {
 
         try {
             // Attempt to fetch documents
-            data = await this.extensionDataManager!.getDocuments(collectionName, isPrivate ? { scopeType: "User" } : undefined);
-            // eslint-disable-next-line @typescript-eslint/no-explicit-any
-        } catch (e: any) {
+            data = await this.executeWithAuthRetry(manager =>
+                manager.getDocuments(collectionName, isPrivate ? { scopeType: "User" } : undefined)
+            );
+        } catch (e: unknown) {
             // Check for specific exception type
-            if (e.serverError?.typeKey === "DocumentCollectionDoesNotExistException") {
+            if (this.hasServerErrorType(e, "DocumentCollectionDoesNotExistException")) {
                 console.warn(`[IDataService] Collection ${collectionName} does not exist or contains no documents.`); // expect no documents for new collections
                 console.log(`[IDataService] Collection ${collectionName} is missing or empty.`, {
                     properties: { collectionName },
@@ -57,8 +58,7 @@ export class AzureDevOpsExtensionDataService implements IDataService {
                 return [];
             }
 
-            console.error("[IDataService] ", e);
-            data = [];
+            throw e;
         }
         return data;
     }
@@ -72,10 +72,14 @@ export class AzureDevOpsExtensionDataService implements IDataService {
         }
         let data: T | undefined;
         try {
-            data = await this.extensionDataManager!.getDocument(collectionName, id, isPrivate ? { scopeType: "User" } : undefined);
-        } catch (e) {
-            console.error("[IDataService] ", e, { collectionName, id });
-            data = undefined;
+            data = await this.executeWithAuthRetry(manager =>
+                manager.getDocument(collectionName, id, isPrivate ? { scopeType: "User" } : undefined)
+            );
+        } catch (e: unknown) {
+            if (this.hasServerErrorType(e, "DocumentDoesNotExistException")) {
+                return undefined;
+            }
+            throw e;
         }
 
         return data;
@@ -85,7 +89,9 @@ export class AzureDevOpsExtensionDataService implements IDataService {
      * Create user/account scoped document.
      */
     public async createDocument<T>(collectionName: string, data: T, isPrivate?: boolean): Promise<T | undefined> {
-        return await this.extensionDataManager!.createDocument(collectionName, data, isPrivate ? { scopeType: "User" } : undefined);
+        return await this.executeWithAuthRetry(manager =>
+            manager.createDocument(collectionName, data, isPrivate ? { scopeType: "User" } : undefined)
+        );
     }
 
     /**
@@ -93,17 +99,14 @@ export class AzureDevOpsExtensionDataService implements IDataService {
      */
     public async createOrUpdateDocument<T>(collectionName: string, data: T, isPrivate?: boolean): Promise<T | undefined> {
         try {
-            return await this.extensionDataManager!.setDocument(
-                collectionName,
-                data,
-                isPrivate ? { scopeType: "User" } : undefined
+            return await this.executeWithAuthRetry(manager =>
+                manager.setDocument(collectionName, data, isPrivate ? { scopeType: "User" } : undefined)
             );
         } catch (e: unknown) {
             if (this.isVersionMismatch(e)) {
                 throw new VersionMismatchError();
             }
-            console.error("[IDataService] ", e);
-            return undefined;
+            throw e;
         }
     }
 
@@ -112,17 +115,14 @@ export class AzureDevOpsExtensionDataService implements IDataService {
      */
     public async updateDocument<T>(collectionName: string, data: T, isPrivate?: boolean): Promise<T | undefined> {
         try {
-            return await this.extensionDataManager!!.updateDocument(
-                collectionName,
-                data,
-                isPrivate ? { scopeType: "User" } : undefined
+            return await this.executeWithAuthRetry(manager =>
+                manager.updateDocument(collectionName, data, isPrivate ? { scopeType: "User" } : undefined)
             );
         } catch (e: unknown) {
             if (this.isVersionMismatch(e)) {
                 throw new VersionMismatchError();
             }
-            console.error("[IDataService] ", e);
-            return undefined;
+            throw e;
         }
     }
 
@@ -130,37 +130,27 @@ export class AzureDevOpsExtensionDataService implements IDataService {
      * Delete user/account scoped document.
      */
     public async deleteDocument(collectionName: string, id: string, isPrivate?: boolean): Promise<void> {
-        return await this.extensionDataManager!.deleteDocument(collectionName, id, isPrivate ? { scopeType: "User" } : undefined);
+        return await this.executeWithAuthRetry(manager =>
+            manager.deleteDocument(collectionName, id, isPrivate ? { scopeType: "User" } : undefined)
+        );
     }
 
     /**
      * Set user/account scoped value.
      */
     public async setValue<T>(id: string, data: T, isPrivate?: boolean): Promise<T | undefined> {
-        let updatedData: T | undefined;
-        try {
-            return await this.extensionDataManager!.setValue(id, data, isPrivate ? { scopeType: "User" } : undefined);
-        } catch (e) {
-            console.error("[IDataService] ", e);
-            updatedData = undefined;
-        }
-
-        return updatedData;
+        return await this.executeWithAuthRetry(manager =>
+            manager.setValue(id, data, isPrivate ? { scopeType: "User" } : undefined)
+        );
     }
 
     /**
      * Get user/account scoped value.
      */
     public async getValue<T>(id: string, isPrivate?: boolean): Promise<T | undefined> {
-        let data: T | undefined;
-        try {
-            data = await this.extensionDataManager!.getValue<T>(id, isPrivate ? { scopeType: "User" } : undefined);
-        } catch (e) {
-            console.error("[IDataService] ", e);
-            data = undefined;
-        }
-
-        return data;
+        return await this.executeWithAuthRetry(manager =>
+            manager.getValue<T>(id, isPrivate ? { scopeType: "User" } : undefined)
+        );
     }
 
     private isVersionMismatch(e: unknown): boolean {
@@ -170,4 +160,65 @@ export class AzureDevOpsExtensionDataService implements IDataService {
             || /InvalidDocumentVersionException/i.test(err.responseText ?? '')
             || /document version does not match/i.test(err.message ?? '');
     };
+
+    private async executeWithAuthRetry<T>(operation: (manager: IExtensionDataManager) => Promise<T>): Promise<T> {
+        if (this.refreshPromise) {
+            await this.refreshPromise;
+        }
+        try {
+            return await operation(this.getExtensionDataManager());
+        } catch (error: unknown) {
+            if (!this.isAuthenticationError(error)) throw error;
+
+            await this.refreshExtensionDataManager();
+            return await operation(this.getExtensionDataManager());
+        }
+    }
+
+    private getExtensionDataManager(): IExtensionDataManager {
+        if (!this.extensionDataManager) {
+            throw new Error('[IDataService] Data service is not initialized');
+        }
+        return this.extensionDataManager;
+    }
+
+    private async refreshExtensionDataManager(): Promise<void> {
+        if (!this.refreshPromise) {
+            this.refreshPromise = (async () => {
+                this.extensionDataManager = null;
+                await this.initialize();
+            })().finally(() => {
+                this.refreshPromise = null;
+            });
+        }
+        await this.refreshPromise;
+    }
+
+    private hasServerErrorType(error: unknown, typeKey: string): boolean {
+        if (!error || typeof error !== 'object') return false;
+        const candidate = error as { serverError?: { typeKey?: string } };
+        return candidate.serverError?.typeKey === typeKey;
+    }
+
+    private isAuthenticationError(error: unknown): boolean {
+        if (!error || typeof error !== 'object') return false;
+        const candidate = error as {
+            status?: number;
+            statusCode?: number;
+            message?: string;
+            responseText?: string;
+            serverError?: { message?: string; typeKey?: string };
+        };
+        const status = candidate.status ?? candidate.statusCode;
+        if (status === 401 || status === 403) return true;
+
+        const text = [
+            candidate.message,
+            candidate.responseText,
+            candidate.serverError?.message,
+            candidate.serverError?.typeKey,
+        ].filter((value): value is string => typeof value === 'string').join(' ');
+
+        return /unauthori[sz]ed|forbidden|authentication required|access token.*expired|token.*expired|TF400813/i.test(text);
+    }
 }

@@ -18,20 +18,27 @@ export class App implements OnInit {
   private queryParamService = inject(QueryParamService);
 
   ready = signal(false);
+  initializationError = signal<string | null>(null);
   drawingId = signal<string | null>(null);
 
   async ngOnInit(): Promise<void> {
-    this.loggingService.initialize();
-    await this.dataService.initialize();
+    try {
+      this.loggingService.initialize();
+      await this.dataService.initialize();
 
-    await new Promise((resolve) => setTimeout(resolve, 0));
-    this.drawingId.set(await this.queryParamService.getParam('drawingId') ?? null);
+      await new Promise((resolve) => setTimeout(resolve, 0));
+      this.drawingId.set(await this.queryParamService.getParam('drawingId') ?? null);
 
-    effect(() => {
-      const drawingId = this.drawingId();
-      void this.queryParamService.setParam('drawingId', drawingId);
-    }, { injector: this.injector });
+      effect(() => {
+        const drawingId = this.drawingId();
+        void this.queryParamService.setParam('drawingId', drawingId);
+      }, { injector: this.injector });
 
-    this.ready.set(true);
+      this.initializationError.set(null);
+      this.ready.set(true);
+    } catch (error: unknown) {
+      this.initializationError.set('The Azure DevOps connection could not be initialized. Restore your session and retry.');
+      console.error(error);
+    }
   }
 }

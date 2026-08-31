@@ -5,4 +5,9 @@
   } @else {
     <app-drawings (drawingIdSelected)="drawingId.set($event)"></app-drawings>
   }
+} @else if (initializationError()) {
+  <div style="padding: 24px; color: red;">
+    <p>{{initializationError()}}</p>
+    <button class="azure-devops-button azure-devops-button-secondary" type="button" (click)="ngOnInit()">Retry</button>
+  </div>
 }

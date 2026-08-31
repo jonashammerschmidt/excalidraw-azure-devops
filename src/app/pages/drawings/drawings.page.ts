@@ -9,15 +9,78 @@ import { ProjectService } from '../../services/project/project.service';
 
 type SortColumn = 'name' | 'updatedAt';
 type SortDirection = 'asc' | 'desc';
-type DrawingsSortState = {
-  column: SortColumn;
-  direction: SortDirection;
+export type DrawingsSortState = { column: SortColumn; direction: SortDirection };
+
+export type DrawingFolder = {
+  name: string;
+  path: string;
+  folders: DrawingFolder[];
+  drawings: SceneMeta[];
 };
 
-const DEFAULT_SORT_STATE: DrawingsSortState = {
-  column: 'updatedAt',
-  direction: 'desc',
-};
+export type DrawingTreeEntry =
+  | { kind: 'folder'; folder: DrawingFolder; depth: number }
+  | { kind: 'drawing'; drawing: SceneMeta; depth: number };
+
+const DEFAULT_SORT_STATE: DrawingsSortState = { column: 'updatedAt', direction: 'desc' };
+
+export function normalizeFolderPath(folderPath: string | undefined): string | undefined {
+  const normalized = (folderPath ?? '').split('/').map(segment => segment.trim()).filter(Boolean).join('/');
+  return normalized || undefined;
+}
+
+export function createDrawingTree(drawings: readonly SceneMeta[]): DrawingFolder {
+  const root: DrawingFolder = { name: '', path: '', folders: [], drawings: [] };
+
+  for (const drawing of drawings) {
+    let current = root;
+    const folderPath = normalizeFolderPath(drawing.folderPath);
+    for (const segment of folderPath?.split('/') ?? []) {
+      const path = current.path ? `${current.path}/${segment}` : segment;
+      let folder = current.folders.find(candidate => candidate.name === segment);
+      if (!folder) {
+        folder = { name: segment, path, folders: [], drawings: [] };
+        current.folders.push(folder);
+      }
+      current = folder;
+    }
+    current.drawings.push(drawing);
+  }
+  return root;
+}
+
+export function flattenDrawingTree(
+  root: DrawingFolder,
+  expandedFolderPaths: ReadonlySet<string>,
+  sortState: DrawingsSortState,
+): DrawingTreeEntry[] {
+  const entries: DrawingTreeEntry[] = [];
+  const appendEntries = (folder: DrawingFolder, depth: number): void => {
+    for (const childFolder of [...folder.folders].sort((left, right) => left.name.localeCompare(right.name, undefined, { sensitivity: 'base' }))) {
+      entries.push({ kind: 'folder', folder: childFolder, depth });
+      if (expandedFolderPaths.has(childFolder.path)) appendEntries(childFolder, depth + 1);
+    }
+    for (const drawing of [...folder.drawings].sort((left, right) => compareScenes(left, right, sortState))) {
+      entries.push({ kind: 'drawing', drawing, depth });
+    }
+  };
+  appendEntries(root, 0);
+  return entries;
+}
+
+function compareScenes(left: SceneMeta, right: SceneMeta, sortState: DrawingsSortState): number {
+  const multiplier = sortState.direction === 'asc' ? 1 : -1;
+  if (sortState.column === 'name') {
+    const result = left.name.localeCompare(right.name, undefined, { sensitivity: 'base' });
+    return result !== 0 ? result * multiplier : compareIsoDates(left.updatedAt, right.updatedAt) * -1;
+  }
+  const result = compareIsoDates(left.updatedAt, right.updatedAt);
+  return result !== 0 ? result * multiplier : left.name.localeCompare(right.name, undefined, { sensitivity: 'base' });
+}
+
+function compareIsoDates(left: string, right: string): number {
+  return new Date(left).getTime() - new Date(right).getTime();
+}
 
 @Component({
   selector: 'app-drawings',
@@ -26,148 +89,131 @@ const DEFAULT_SORT_STATE: DrawingsSortState = {
   imports: [DatePipe, KebabMenuComponent],
 })
 export class DrawingsPage {
-
-  extensionDataService = inject(ExcalidrawScenesService);
-  dialogService = inject(DialogService);
+  private readonly extensionDataService = inject(ExcalidrawScenesService);
+  private readonly dialogService = inject(DialogService);
   private readonly dataService = inject<IDataService>(DATA_SERVICE);
   private readonly projectService = inject(ProjectService);
 
-  drawingIdSelected = output<string>();
-
-  drawings = signal<SceneMeta[]>([]);
-  sortState = signal<DrawingsSortState>(DEFAULT_SORT_STATE);
-  sortedDrawings = computed(() => this.getSortedDrawings(this.drawings(), this.sortState()));
+  readonly drawingIdSelected = output<string>();
+  readonly drawings = signal<SceneMeta[]>([]);
+  readonly loadErrorMessage = signal<string | null>(null);
+  readonly sortState = signal<DrawingsSortState>(DEFAULT_SORT_STATE);
+  readonly expandedFolderPaths = signal<ReadonlySet<string>>(new Set());
+  readonly drawingTree = computed(() => createDrawingTree(this.drawings()));
+  readonly visibleEntries = computed(() => flattenDrawingTree(
+    this.drawingTree(), this.expandedFolderPaths(), this.sortState(),
+  ));
 
   async ngOnInit(): Promise<void> {
-    await this.loadSortState();
-    this.drawings.set(await this.extensionDataService.listScenes());
+    try {
+      await this.loadSortState();
+      this.drawings.set(await this.extensionDataService.listScenes());
+      this.loadErrorMessage.set(null);
+    } catch (error: unknown) {
+      this.loadErrorMessage.set('Drawings could not be loaded. Check your Azure DevOps session or network connection.');
+      console.error(error);
+    }
   }
 
   async add(): Promise<void> {
-    const name = await this.dialogService.promptInput("New drawing", "Drawing name");
-    if (!name || name.trim().length === 0) {
-      return;
-    }
-
+    const details = await this.dialogService.promptDrawingDetails('New drawing');
+    const name = details?.name.trim();
+    if (!details || !name) return;
     const drawingId = newGuid();
-    await this.extensionDataService.saveScene({
-      id: drawingId,
-      name: name,
-      elements: [],
-      __etag: 0,
-    });
-    this.drawingIdSelected.emit(drawingId);
+    try {
+      await this.extensionDataService.saveScene({
+        id: drawingId, name, folderPath: normalizeFolderPath(details.folderPath), elements: [], __etag: 0,
+      });
+      this.drawingIdSelected.emit(drawingId);
+    } catch (error: unknown) {
+      this.showOperationError('Drawing could not be created.', error);
+    }
   }
 
   async rename(sceneMeta: SceneMeta): Promise<void> {
-    const name = await this.dialogService.promptInput("Rename drawing", "New drawing name", sceneMeta.name);
-    if (!name || name === sceneMeta.name) {
-      return;
+    const details = await this.dialogService.promptDrawingDetails('Rename/move drawing', {
+      name: sceneMeta.name, folderPath: sceneMeta.folderPath ?? '',
+    });
+    const name = details?.name.trim();
+    if (!details || !name) return;
+    const folderPath = normalizeFolderPath(details.folderPath);
+    if (name === sceneMeta.name && folderPath === normalizeFolderPath(sceneMeta.folderPath)) return;
+    try {
+      const scene = await this.extensionDataService.loadScene(sceneMeta.id);
+      if (!scene) return;
+      scene.name = name;
+      scene.folderPath = folderPath;
+      await this.extensionDataService.saveScene(scene);
+      await this.ngOnInit();
+      await this.dialogService.openToast('Drawing renamed/moved.', 1000);
+    } catch (error: unknown) {
+      this.showOperationError('Drawing could not be renamed or moved.', error);
     }
-
-    const scene = await this.extensionDataService.loadScene(sceneMeta.id);
-    if (!scene) {
-      return;
-    }
-
-    scene.name = name;
-
-    await this.extensionDataService.saveScene(scene);
-    await this.ngOnInit();
-    this.dialogService.openToast("Drawing renamed.", 1000);
   }
 
   async delete(sceneMeta: SceneMeta): Promise<void> {
     const name = await this.dialogService.promptInput(
-      "Delete drawing",
-      "Enter drawing name \"" + sceneMeta.name + "\" to confirm deletion");
-    if (!name || name !== sceneMeta.name) {
-      return;
+      'Delete drawing', `Enter drawing name "${sceneMeta.name}" to confirm deletion`,
+    );
+    if (!name || name !== sceneMeta.name) return;
+    try {
+      await this.extensionDataService.deleteScene(sceneMeta.id);
+      await this.ngOnInit();
+      await this.dialogService.openToast('Drawing deleted.', 1000);
+    } catch (error: unknown) {
+      this.showOperationError('Drawing could not be deleted.', error);
     }
+  }
 
-    await this.extensionDataService.deleteScene(sceneMeta.id);
-    await this.ngOnInit();
-    this.dialogService.openToast("Drawing deleted.", 1000);
+  toggleFolder(path: string): void {
+    this.expandedFolderPaths.update(paths => {
+      const updated = new Set(paths);
+      updated.has(path) ? updated.delete(path) : updated.add(path);
+      return updated;
+    });
+  }
+
+  isFolderExpanded(path: string): boolean {
+    return this.expandedFolderPaths().has(path);
   }
 
   async changeSort(column: SortColumn): Promise<void> {
     const currentSortState = this.sortState();
-    const nextSortState = currentSortState.column === column
-      ? {
-        column,
-        direction: currentSortState.direction === 'asc' ? 'desc' : 'asc',
-      } satisfies DrawingsSortState
-      : {
-        column,
-        direction: this.getDefaultDirection(column),
-      } satisfies DrawingsSortState;
-
+    const nextSortState: DrawingsSortState = currentSortState.column === column
+      ? { column, direction: currentSortState.direction === 'asc' ? 'desc' : 'asc' }
+      : { column, direction: this.getDefaultDirection(column) };
     this.sortState.set(nextSortState);
-    await this.dataService.setValue(await this.getSortStorageKey(), nextSortState, true);
+    try {
+      await this.dataService.setValue(await this.getSortStorageKey(), nextSortState, true);
+    } catch (error: unknown) {
+      this.showOperationError('Sort order could not be saved.', error);
+    }
   }
 
-  isSortedBy(column: SortColumn): boolean {
-    return this.sortState().column === column;
-  }
+  isSortedBy(column: SortColumn): boolean { return this.sortState().column === column; }
 
   getSortIndicator(column: SortColumn): string {
-    if (!this.isSortedBy(column)) {
-      return '';
-    }
-
-    return this.sortState().direction === 'asc' ? '▲' : '▼';
+    return this.isSortedBy(column) ? (this.sortState().direction === 'asc' ? '▲' : '▼') : '';
   }
 
   private async loadSortState(): Promise<void> {
     const storedSortState = await this.dataService.getValue<DrawingsSortState>(await this.getSortStorageKey(), true);
-    if (!this.isValidSortState(storedSortState)) {
-      this.sortState.set(DEFAULT_SORT_STATE);
-      return;
-    }
-
-    this.sortState.set(storedSortState);
+    this.sortState.set(this.isValidSortState(storedSortState) ? storedSortState : DEFAULT_SORT_STATE);
   }
 
   private async getSortStorageKey(): Promise<string> {
-    const projectId = await this.projectService.getCurrectProjectId();
-    return `drawings.sort.${projectId}`;
+    return `drawings.sort.${await this.projectService.getCurrectProjectId()}`;
   }
 
-  private getSortedDrawings(drawings: SceneMeta[], sortState: DrawingsSortState): SceneMeta[] {
-    return [...drawings].sort((left, right) => this.compareScenes(left, right, sortState));
-  }
-
-  private compareScenes(left: SceneMeta, right: SceneMeta, sortState: DrawingsSortState): number {
-    const multiplier = sortState.direction === 'asc' ? 1 : -1;
-
-    if (sortState.column === 'name') {
-      const result = left.name.localeCompare(right.name, undefined, { sensitivity: 'base' });
-      if (result !== 0) {
-        return result * multiplier;
-      }
-
-      return this.compareIsoDates(left.updatedAt, right.updatedAt) * -1;
-    }
-
-    const result = this.compareIsoDates(left.updatedAt, right.updatedAt);
-    if (result !== 0) {
-      return result * multiplier;
-    }
-
-    return left.name.localeCompare(right.name, undefined, { sensitivity: 'base' });
-  }
-
-  private compareIsoDates(left: string, right: string): number {
-    return new Date(left).getTime() - new Date(right).getTime();
-  }
-
-  private getDefaultDirection(column: SortColumn): SortDirection {
-    return column === 'name' ? 'asc' : 'desc';
-  }
+  private getDefaultDirection(column: SortColumn): SortDirection { return column === 'name' ? 'asc' : 'desc'; }
 
   private isValidSortState(value: DrawingsSortState | undefined): value is DrawingsSortState {
-    return value !== undefined
-      && (value.column === 'name' || value.column === 'updatedAt')
+    return value !== undefined && (value.column === 'name' || value.column === 'updatedAt')
       && (value.direction === 'asc' || value.direction === 'desc');
+  }
+
+  private showOperationError(message: string, error: unknown): void {
+    this.dialogService.openToast(`${message} Check your Azure DevOps session or network connection.`, 15000);
+    console.error(error);
   }
 }

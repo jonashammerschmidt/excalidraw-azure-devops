@@ -2,51 +2,52 @@
     <div class="headline">
         <h2>Drawings</h2>
         <div class="divider"></div>
-        <div>
-            <button class="azure-devops-button add-icon" (click)="add()">+ New Drawing</button>
-        </div>
+        <div><button class="azure-devops-button add-icon" (click)="add()">+ New Drawing</button></div>
     </div>
     <div class="content">
-        <table style="width: 100%;">
+        @if (loadErrorMessage()) {
+        <div style="color: red; padding: 12px 16px;">
+            <span>{{loadErrorMessage()}}</span>
+            <button class="azure-devops-button azure-devops-button-secondary" type="button" (click)="ngOnInit()">Retry</button>
+        </div>
+        }
+        <table>
             <thead>
                 <tr>
                     <th>
-                        <button
-                            class="sort-button"
-                            type="button"
-                            [class.active]="isSortedBy('name')"
-                            (click)="changeSort('name')">
-                            <span>Name</span>
-                            <span class="sort-indicator">{{getSortIndicator('name')}}</span>
+                        <button class="sort-button" type="button" [class.active]="isSortedBy('name')" (click)="changeSort('name')">
+                            <span style="padding-left: 60px;">Name</span><span class="sort-indicator">{{getSortIndicator('name')}}</span>
                         </button>
                     </th>
                     <th>
-                        <button
-                            class="sort-button"
-                            type="button"
-                            [class.active]="isSortedBy('updatedAt')"
-                            (click)="changeSort('updatedAt')">
-                            <span>Last Changed</span>
-                            <span class="sort-indicator">{{getSortIndicator('updatedAt')}}</span>
+                        <button class="sort-button" type="button" [class.active]="isSortedBy('updatedAt')" (click)="changeSort('updatedAt')">
+                            <span>Last Changed</span><span class="sort-indicator">{{getSortIndicator('updatedAt')}}</span>
                         </button>
                     </th>
-                    <th style="width: 32px;">
-                    </th>
+                    <th class="menu-column"></th>
                 </tr>
             </thead>
             <tbody>
-                @for (drawing of sortedDrawings(); track drawing.id) {
-                <tr (click)="drawingIdSelected.emit(drawing.id)">
-                    <td>
-                        <span>{{drawing.name}}</span>
-                    </td>
-                    <td>
-                        <span>{{drawing.updatedAt | date: 'mediumDate'}} - {{drawing.updatedAt | date: 'shortTime'}}</span>
-                    </td>
-                    <td class="menu-cell">
-                        <app-kebab-menu (rename)="rename(drawing)" (delete)="delete(drawing)" (click)="$event.stopPropagation()"></app-kebab-menu>
-                    </td>
-                </tr>
+                @for (entry of visibleEntries(); track entry.kind === 'folder' ? entry.folder.path : entry.drawing.id) {
+                    @if (entry.kind === 'folder') {
+                    <tr class="folder-row">
+                        <td>
+                            <button class="folder-button" type="button" [style.padding-left.px]="16 + entry.depth * 24"
+                                [attr.aria-expanded]="isFolderExpanded(entry.folder.path)" (click)="toggleFolder(entry.folder.path)">
+                                <span class="folder-chevron">{{isFolderExpanded(entry.folder.path) ? '▾' : '▸'}}</span>
+                                <span class="folder-icon" aria-hidden="true"></span>
+                                <span>{{entry.folder.name}}</span>
+                            </button>
+                        </td>
+                        <td></td><td></td>
+                    </tr>
+                    } @else {
+                    <tr class="drawing-row">
+                        <td><button class="drawing-button" type="button" [style.padding-left.px]="60 + entry.depth * 24" (click)="drawingIdSelected.emit(entry.drawing.id)">{{entry.drawing.name}}</button></td>
+                        <td><button class="drawing-button drawing-date" type="button" (click)="drawingIdSelected.emit(entry.drawing.id)">{{entry.drawing.updatedAt | date: 'mediumDate'}} - {{entry.drawing.updatedAt | date: 'shortTime'}}</button></td>
+                        <td class="menu-cell"><app-kebab-menu (rename)="rename(entry.drawing)" (delete)="delete(entry.drawing)" (click)="$event.stopPropagation()"></app-kebab-menu></td>
+                    </tr>
+                    }
                 }
             </tbody>
         </table>
