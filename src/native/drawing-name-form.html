@@ -139,6 +139,8 @@
           }
 
           updateSaveButtonDisabled();
+          SDK.resize(undefined, document.body.scrollHeight);
+          SDK.notifyLoadSucceeded();
           nameInput.addEventListener("input", () => {
             updateSaveButtonDisabled();
           });
