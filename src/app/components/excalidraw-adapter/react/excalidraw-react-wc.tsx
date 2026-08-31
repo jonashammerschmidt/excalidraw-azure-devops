@@ -32,6 +32,7 @@ export function getDefaultAppState(): Partial<AppState> {
 function ExcalidrawReactWc(props: ExcalidrawProps) {
   const [initialData, setInitialData] = useState<ExcalidrawInitialDataState | null>(null);
   const rootRef = useRef<HTMLDivElement>(null);
+  const excalidrawApiRef = useRef<ExcalidrawImperativeAPI | null>(null);
 
   useEffect(() => {
     let canceled = false;
@@ -40,13 +41,25 @@ function ExcalidrawReactWc(props: ExcalidrawProps) {
       const resolved = await resolveThunkOrValue<ExcalidrawInitialDataState>(props.initialData);
       if (canceled) return;
 
-      setInitialData({
-        elements: [],
-        ...resolved,
+      const nextElements = resolved?.elements ?? [];
+      const nextScene = {
+        ...(resolved ?? {}),
+        elements: nextElements,
         appState: {
           collaborators: new Map(),
         },
-      });
+      };
+
+      const api = excalidrawApiRef.current;
+      if (api) {
+        api.updateScene({ elements: nextScene.elements });
+        if (nextScene.elements.length > 0) {
+          api.scrollToContent(nextScene.elements, { fitToContent: true });
+        }
+        return;
+      }
+
+      setInitialData(nextScene);
     })();
 
     return () => {
@@ -80,6 +93,7 @@ function ExcalidrawReactWc(props: ExcalidrawProps) {
         <Excalidraw
           initialData={initialData}
           excalidrawAPI={(api: ExcalidrawImperativeAPI) => {
+            excalidrawApiRef.current = api;
             setTimeout(() => {
               if (api.getSceneElements().length > 0) {
                 api.scrollToContent(api.getSceneElements(), { fitToContent: true });

@@ -56,16 +56,11 @@ export class DrawingPage {
   private saveQueued = false;
   private autosaveReady = false;
 
-  formatFolderPath(folderPath: string): string {
-    return folderPath.replaceAll('/', ' / ');
-  }
-
   constructor() {
-    const elementsInitEffectRef = effect(() => {
+    effect(() => {
       if (!this.sceneResource.hasValue()) return;
       const s = this.sceneResource.value()!;
       this.elements.set(this.cloneElements(s.elements));
-      elementsInitEffectRef.destroy();
     });
 
     effect(() => {
@@ -148,6 +143,7 @@ export class DrawingPage {
   }
 
   retryLoad(): void {
+    this.autosaveReady = false;
     this.sceneResource.reload();
   }
 
@@ -218,7 +214,8 @@ export class DrawingPage {
           'Your changes could not be saved because someone else updated this document. Please reload to get the latest version.',
           15000,
           'Reload',
-          () => this.sceneResource.reload(),
+          () => this.retryLoad(),
+          { text: 'Reload successful.', duration: 1000 },
         );
         this.noUpdatesAllowed.set(true);
         this.saveErrorMessage.set('Changes not saved because the document version changed.');

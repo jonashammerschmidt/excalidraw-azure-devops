@@ -83,7 +83,13 @@ export class DialogService {
         });
     }
 
-    public async openToastWithAction(text: string, duration: number, action: string, onActionClick: () => void): Promise<void> {
+    public async openToastWithAction(
+        text: string,
+        duration: number,
+        action: string,
+        onActionClick: () => void,
+        replacementToast?: { text: string; duration: number },
+    ): Promise<void> {
         if (!environment.production) {
             if (confirm(text)) {
                 onActionClick();
@@ -100,10 +106,10 @@ export class DialogService {
             callToAction: action,
             onCallToActionClick: () => {
                 // The Azure DevOps API does not expose a way to dismiss a toast.
-                // Replace the active toast with a nearly instantaneous empty one instead.
+                // Replace the active toast with an optional follow-up toast instead.
                 globalMessagesService.addToast({
-                    duration: 1,
-                    message: '',
+                    duration: replacementToast?.duration ?? 1,
+                    message: replacementToast?.text ?? '',
                     forceOverrideExisting: true,
                 });
                 onActionClick();
