@@ -65,7 +65,16 @@ export class DialogService {
             duration,
             message: text,
             callToAction: action,
-            onCallToActionClick: onActionClick,
+            onCallToActionClick: () => {
+                // The Azure DevOps API does not expose a way to dismiss a toast.
+                // Replace the active toast with a nearly instantaneous empty one instead.
+                globalMessagesService.addToast({
+                    duration: 1,
+                    message: '',
+                    forceOverrideExisting: true,
+                });
+                onActionClick();
+            },
         });
     }
 }
