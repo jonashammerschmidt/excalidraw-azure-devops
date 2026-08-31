@@ -34,7 +34,6 @@ export class DrawingPage {
     params: () => this.drawingId(),
     loader: async ({ params }) => {
       const scene = await this.excalidrawScenesService.loadScene(params);
-      this.noUpdatesAllowed.set(false);
       return scene ?? getDefaultSceneDocument(params);
     },
   });
@@ -57,10 +56,11 @@ export class DrawingPage {
   private autosaveReady = false;
 
   constructor() {
-    effect(() => {
+    const elementsInitEffectRef = effect(() => {
       if (!this.sceneResource.hasValue()) return;
       const s = this.sceneResource.value()!;
       this.elements.set(this.cloneElements(s.elements));
+      elementsInitEffectRef.destroy();
     });
 
     effect(() => {
@@ -143,7 +143,6 @@ export class DrawingPage {
   }
 
   retryLoad(): void {
-    this.autosaveReady = false;
     this.sceneResource.reload();
   }
 
@@ -210,12 +209,9 @@ export class DrawingPage {
         errorMessage: error instanceof Error ? error.message : String(error),
       });
       if (error instanceof VersionMismatchError) {
-        this.dialogs.openToastWithAction(
-          'Your changes could not be saved because someone else updated this document. Please reload to get the latest version.',
+        this.dialogs.openToast(
+          'Your changes could not be saved because someone else updated this document. Please refresh manually to get the latest version.',
           15000,
-          'Reload',
-          () => this.retryLoad(),
-          { text: 'Reload successful.', duration: 1000 },
         );
         this.noUpdatesAllowed.set(true);
         this.saveErrorMessage.set('Changes not saved because the document version changed.');

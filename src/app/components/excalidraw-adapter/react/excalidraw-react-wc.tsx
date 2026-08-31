@@ -10,7 +10,6 @@ import type {
 import r2wc from '@r2wc/react-to-web-component';
 import { KeyboardEvent, useEffect, useRef, useState } from 'react';
 import { resolveThunkOrValue } from '../../../helpers/utils/promise.helper';
-import { deepEqual } from '../../../helpers/utils/compare.helper';
 
 declare global {
   interface Window {
@@ -50,18 +49,6 @@ function ExcalidrawReactWc(props: ExcalidrawProps) {
           collaborators: new Map(),
         },
       };
-
-      const api = excalidrawApiRef.current;
-      if (api) {
-        const currentElements = api.getSceneElementsIncludingDeleted();
-        if (!deepEqual(currentElements, nextScene.elements)) {
-          api.updateScene({ elements: nextScene.elements });
-          if (nextScene.elements.length > 0) {
-            api.scrollToContent(nextScene.elements, { fitToContent: true });
-          }
-        }
-        return;
-      }
 
       setInitialData(nextScene);
     })();

@@ -102,24 +102,6 @@ describe('DrawingPage autosave', () => {
     expect(fixture.componentInstance.elements()).toEqual(persistedElements);
   });
 
-  it('replaces editor elements after reloading the drawing', async () => {
-    const initialElements = [createElement('initial')];
-    const reloadedElements = [createElement('reloaded')];
-    scenesService.loadScene.and.returnValues(
-      Promise.resolve(createScene(initialElements, 1)),
-      Promise.resolve(createScene(reloadedElements, 2)),
-    );
-
-    const fixture = TestBed.createComponent(DrawingPage);
-    fixture.componentRef.setInput('drawingId', 'drawing-id');
-    fixture.detectChanges();
-    await fixture.whenStable();
-
-    fixture.componentInstance.retryLoad();
-    await fixture.whenStable();
-
-    expect(fixture.componentInstance.elements()).toEqual(reloadedElements);
-  });
 });
 
 function createScene(elements: OrderedExcalidrawElement[], etag: number): SceneDocument {
