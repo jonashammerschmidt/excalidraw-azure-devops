@@ -59,6 +59,16 @@
       "type": "shell",
       "command": "npx tfx-cli extension create --rev-version --manifest-globs vss-extension.json",
       "problemMatcher": []
-    }
+    },
+    {
+      "label": "Tasks - update npm (minor)",
+      "type": "shell",
+      "command": "npx npm-check-updates --upgrade --target 'minor' --peer && rm -rf node_modules package-lock.json && npm install",
+      "icon": {
+        "id": "cloud-download",
+        "color": "terminal.ansiWhite"
+      },
+      "problemMatcher": []
+    },
   ]
 }
