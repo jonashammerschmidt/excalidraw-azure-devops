@@ -1,5 +1,6 @@
 import { CUSTOM_ELEMENTS_SCHEMA, Component, OnInit, computed, model, output } from '@angular/core';
 import type { OrderedExcalidrawElement } from '@excalidraw/excalidraw/element/types';
+import { deepEqual } from '../../helpers/utils/compare.helper';
 import { ExcalidrawState } from './react/excalidraw-react-wc';
 
 @Component({
@@ -22,7 +23,9 @@ export class ExcalidrawAdapterComponent implements OnInit {
 
   ngOnInit(): void {
     window.excalidrawChange = (state: ExcalidrawState) => {
-      this.elements.set(this.cloneElements(state.elements));
+      if (!deepEqual(this.elements(), state.elements)) {
+        this.elements.set(this.cloneElements(state.elements));
+      }
     };
   }
 
