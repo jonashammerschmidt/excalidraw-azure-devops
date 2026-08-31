@@ -1,8 +1,11 @@
 <div class="page">
     <div class="headline">
-        <h2><span>Drawing</span>
+        <h2><span>Drawing: </span>
             @if (!sceneResource.isLoading()) {
-            <span>: {{sceneResource.value()?.name ?? 'loading'}}</span>
+                @if (sceneResource.value()?.folderPath) {
+                <span class="drawing-path">{{formatFolderPath(sceneResource.value()?.folderPath ?? '')}} / </span>
+                }
+            <span>{{sceneResource.value()?.name ?? 'loading'}}</span>
             }
         </h2>
         <div class="divider"></div>

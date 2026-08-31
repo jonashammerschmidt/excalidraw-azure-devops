@@ -7,7 +7,7 @@
     body {
       display: flex;
       flex-direction: column;
-      height: 144px;
+      height: 190px;
       margin: 0;
 
       color: var(--text-primary-color, rgba(0, 0, 0, .9));
@@ -96,9 +96,13 @@
 </head>
 
 <body>
-  <label id="messageLabel" for="input"></label>
+  <label for="nameInput">Drawing name</label>
   <div class="input">
-    <input id="input" type="text" autofocus />
+    <input id="nameInput" type="text" autofocus />
+  </div>
+  <label for="folderPathInput">Folder path (optional)</label>
+  <div class="input">
+    <input id="folderPathInput" type="text" placeholder="Architecture/Backend" />
   </div>
   <div class="divider"></div>
   <div class="buttons">
@@ -120,29 +124,26 @@
         SDK.ready().then(() => {
           SDK.applyTheme({});
           const cfg = SDK.getConfiguration();
-          const label = document.getElementById("messageLabel");
-          const input = document.getElementById("input");
+          const nameInput = document.getElementById("nameInput");
+          const folderPathInput = document.getElementById("folderPathInput");
           const saveButton = document.getElementById("save");
           const cancelButton = document.getElementById("cancel");
 
-          // Konfiguration übernehmen
-          if (cfg.message) {
-            label.textContent = cfg.message;
-          }
           if (cfg.initialValue) {
-            input.value = cfg.initialValue;
+            nameInput.value = cfg.initialValue.name || "";
+            folderPathInput.value = cfg.initialValue.folderPath || "";
           }
 
           function updateSaveButtonDisabled() {
-            saveButton.disabled = input.value.trim().length === 0;
+            saveButton.disabled = nameInput.value.trim().length === 0;
           }
 
           updateSaveButtonDisabled();
-          input.addEventListener("input", () => {
+          nameInput.addEventListener("input", () => {
             updateSaveButtonDisabled();
           });
           saveButton.addEventListener("click", () => {
-            cfg.dialog.close(input.value);
+            cfg.dialog.close({ name: nameInput.value, folderPath: folderPathInput.value });
           });
           cancelButton.addEventListener("click", () => {
             cfg.dialog.close();

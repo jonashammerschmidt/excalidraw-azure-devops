@@ -46,6 +46,10 @@ export class DrawingPage {
   isSaving = signal(false);
   lastSavedLabel = signal<string | null>(null);
 
+  formatFolderPath(folderPath: string): string {
+    return folderPath.replaceAll('/', ' / ');
+  }
+
   constructor() {
     const elementsInitEffectRef = effect(() => {
       if (!this.sceneResource.hasValue()) return;
@@ -110,6 +114,7 @@ export class DrawingPage {
     const updated: SceneDocumentForUpdate = {
       id: this.drawingId(),
       name: s.name,
+      folderPath: s.folderPath,
       elements: this.elements(),
       __etag: s.__etag,
     };

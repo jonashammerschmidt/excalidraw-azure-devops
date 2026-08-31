@@ -3,12 +3,15 @@
 {
   "extends": "./tsconfig.json",
   "compilerOptions": {
+    "jsx": "react-jsx",
+    "allowJs": true,
     "outDir": "./out-tsc/spec",
     "types": [
       "jasmine"
     ]
   },
   "include": [
-    "src/**/*.ts"
+    "src/**/*.ts",
+    "src/**/*.tsx"
   ]
 }

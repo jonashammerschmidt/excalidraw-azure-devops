@@ -6,6 +6,11 @@ import { environment } from '../../../environments/environment';
 const HOST_PAGE_LAYOUT_SERVICE_ID = "ms.vss-features.host-page-layout-service";
 const GLOBAL_MESSAGES_SERVICE_ID = "ms.vss-tfs-web.tfs-global-messages-service";
 
+export type DrawingDetails = {
+    name: string;
+    folderPath: string;
+};
+
 @Injectable({ providedIn: 'root' })
 export class DialogService {
     azureDevOpsSdkService = inject(AzureDevOpsSdkService);
@@ -31,6 +36,34 @@ export class DialogService {
                 onClose: (result) => {
                     resolve(result ?? null);
                 }
+            });
+        });
+    }
+
+    public async promptDrawingDetails(
+        title: string,
+        initialValue: DrawingDetails = { name: '', folderPath: '' },
+    ): Promise<DrawingDetails | null> {
+        if (!environment.production) {
+            const name = prompt('Drawing name', initialValue.name);
+            if (name === null) {
+                return null;
+            }
+
+            const folderPath = prompt('Folder path (optional)', initialValue.folderPath);
+            return folderPath === null ? null : { name, folderPath };
+        }
+
+        const sdk = this.azureDevOpsSdkService.sdk()!;
+        const hostPageLayoutService = await sdk.getService<IHostPageLayoutService>(HOST_PAGE_LAYOUT_SERVICE_ID);
+        const extensionCtx = sdk.getExtensionContext();
+        const contributionId = `${extensionCtx.publisherId}.${extensionCtx.extensionId}.drawing-name-form`;
+
+        return new Promise((resolve) => {
+            hostPageLayoutService.openCustomDialog<DrawingDetails | null>(contributionId, {
+                title,
+                configuration: { initialValue },
+                onClose: (result) => resolve(result ?? null),
             });
         });
     }

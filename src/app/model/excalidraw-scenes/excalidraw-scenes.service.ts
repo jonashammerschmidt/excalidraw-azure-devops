@@ -7,6 +7,7 @@ import { LoggingService } from '../../services/logging/logging.service';
 export type SceneMeta = {
   id: string;
   name: string;
+  folderPath?: string;
   updatedAt: string;
   projectId: string;
   __etag: number;
@@ -61,10 +62,11 @@ export class ExcalidrawScenesService {
   }
 
   public async saveScene(sceneDocumentForUpdate: SceneDocumentForUpdate): Promise<SceneDocument> {
-    const { id, name, elements, __etag } = sceneDocumentForUpdate;
+    const { id, name, folderPath, elements, __etag } = sceneDocumentForUpdate;
     this.loggingService.debug('ExcalidrawScenesService', 'saveScene called', {
       id,
       name,
+      folderPath,
       elementCount: elements.filter(element => !element.isDeleted).length,
       etag: __etag,
     });
@@ -74,6 +76,7 @@ export class ExcalidrawScenesService {
     const meta: SceneMeta = {
       id,
       name,
+      folderPath,
       updatedAt: new Date().toISOString(),
       projectId: await this.projectService.getCurrectProjectId(),
       __etag
