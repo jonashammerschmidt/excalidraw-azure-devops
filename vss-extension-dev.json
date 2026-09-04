@@ -98,9 +98,9 @@
       "addressable": true
     },
     {
-      "path": "node_modules/azure-devops-extension-sdk",
+      "path": "node_modules/azure-devops-extension-sdk/SDK.min.js",
       "addressable": true,
-      "packagePath": "lib"
+      "packagePath": "lib/SDK.min.js"
     }
   ]
 }
