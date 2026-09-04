@@ -4,7 +4,12 @@
 
 @if (open()) {
 <div class="menu">
+    @if (canCreateDrawing()) {
+    <button class="item" (click)="onCreateDrawing()">New Drawing</button>
+    }
     <button class="item" (click)="onRename()">Rename/move</button>
+    @if (canDelete()) {
     <button class="item" (click)="onDelete()">Delete</button>
+    }
 </div>
 }

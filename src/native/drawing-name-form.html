@@ -96,11 +96,11 @@
 </head>
 
 <body>
-  <label for="nameInput">Drawing name</label>
+  <label id="nameLabel" for="nameInput">Drawing name</label>
   <div class="input">
     <input id="nameInput" type="text" autofocus />
   </div>
-  <label for="folderPathInput">Folder path (optional)</label>
+  <label id="folderPathLabel" for="folderPathInput">Folder path (optional)</label>
   <div class="input">
     <input id="folderPathInput" type="text" placeholder="Architecture/Backend" />
   </div>
@@ -126,12 +126,18 @@
           const cfg = SDK.getConfiguration();
           const nameInput = document.getElementById("nameInput");
           const folderPathInput = document.getElementById("folderPathInput");
+          const nameLabel = document.getElementById("nameLabel");
+          const folderPathLabel = document.getElementById("folderPathLabel");
           const saveButton = document.getElementById("save");
           const cancelButton = document.getElementById("cancel");
 
           if (cfg.initialValue) {
             nameInput.value = cfg.initialValue.name || "";
             folderPathInput.value = cfg.initialValue.folderPath || "";
+          }
+          if (cfg.labels) {
+            nameLabel.textContent = cfg.labels.name || nameLabel.textContent;
+            folderPathLabel.textContent = cfg.labels.folderPath || folderPathLabel.textContent;
           }
 
           function updateSaveButtonDisabled() {

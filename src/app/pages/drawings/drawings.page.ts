@@ -29,6 +29,14 @@ export function normalizeFolderPath(folderPath: string | undefined): string | un
   return normalized || undefined;
 }
 
+export function moveFolderPath(sourcePath: string, targetPath: string, folderPath: string | undefined): string | undefined {
+  const normalizedFolderPath = normalizeFolderPath(folderPath);
+  if (!normalizedFolderPath || (normalizedFolderPath !== sourcePath && !normalizedFolderPath.startsWith(`${sourcePath}/`))) {
+    return normalizedFolderPath;
+  }
+  return `${targetPath}${normalizedFolderPath.slice(sourcePath.length)}`;
+}
+
 export function createDrawingTree(drawings: readonly SceneMeta[]): DrawingFolder {
   const root: DrawingFolder = { name: '', path: '', folders: [], drawings: [] };
 
@@ -56,7 +64,7 @@ export function flattenDrawingTree(
 ): DrawingTreeEntry[] {
   const entries: DrawingTreeEntry[] = [];
   const appendEntries = (folder: DrawingFolder, depth: number): void => {
-    for (const childFolder of [...folder.folders].sort((left, right) => left.name.localeCompare(right.name, undefined, { sensitivity: 'base' }))) {
+    for (const childFolder of [...folder.folders].sort((left, right) => compareNames(left.name, right.name))) {
       entries.push({ kind: 'folder', folder: childFolder, depth });
       if (expandedFolderPaths.has(childFolder.path)) appendEntries(childFolder, depth + 1);
     }
@@ -71,11 +79,15 @@ export function flattenDrawingTree(
 function compareScenes(left: SceneMeta, right: SceneMeta, sortState: DrawingsSortState): number {
   const multiplier = sortState.direction === 'asc' ? 1 : -1;
   if (sortState.column === 'name') {
-    const result = left.name.localeCompare(right.name, undefined, { sensitivity: 'base' });
+    const result = compareNames(left.name, right.name);
     return result !== 0 ? result * multiplier : compareIsoDates(left.updatedAt, right.updatedAt) * -1;
   }
   const result = compareIsoDates(left.updatedAt, right.updatedAt);
-  return result !== 0 ? result * multiplier : left.name.localeCompare(right.name, undefined, { sensitivity: 'base' });
+  return result !== 0 ? result * multiplier : compareNames(left.name, right.name);
+}
+
+function compareNames(left: string, right: string): number {
+  return left.localeCompare(right, undefined, { numeric: true, sensitivity: 'base' });
 }
 
 function compareIsoDates(left: string, right: string): number {
@@ -117,16 +129,44 @@ export class DrawingsPage {
 
   async add(): Promise<void> {
     const details = await this.dialogService.promptDrawingDetails('New drawing');
+    await this.createDrawing(details);
+  }
+
+  async addInFolder(folder: DrawingFolder): Promise<void> {
+    const details = await this.dialogService.promptDrawingDetails('New drawing', { name: '', folderPath: folder.path });
+    await this.createDrawing(details);
+  }
+
+  async renameFolder(folder: DrawingFolder): Promise<void> {
+    const parentPath = folder.path.includes('/') ? folder.path.slice(0, folder.path.lastIndexOf('/')) : '';
+    const details = await this.dialogService.promptDrawingDetails('Rename/move folder', {
+      name: folder.name, folderPath: parentPath,
+    }, {
+      name: 'Folder name', folderPath: 'Parent folder (optional)',
+    });
     const name = details?.name.trim();
     if (!details || !name) return;
-    const drawingId = newGuid();
+    const targetPath = [normalizeFolderPath(details.folderPath), name].filter(Boolean).join('/');
+    if (targetPath === folder.path) return;
+    if (targetPath.startsWith(`${folder.path}/`)) {
+      await this.dialogService.openToast('A folder cannot be moved into itself.', 5000);
+      return;
+    }
     try {
-      await this.extensionDataService.saveScene({
-        id: drawingId, name, folderPath: normalizeFolderPath(details.folderPath), elements: [], __etag: 0,
+      const affectedDrawings = this.drawings().filter(({ folderPath }) => {
+        const normalizedFolderPath = normalizeFolderPath(folderPath);
+        return normalizedFolderPath === folder.path || normalizedFolderPath?.startsWith(`${folder.path}/`);
       });
-      this.drawingIdSelected.emit(drawingId);
+      for (const drawing of affectedDrawings) {
+        const scene = await this.extensionDataService.loadScene(drawing.id);
+        if (!scene) continue;
+        scene.folderPath = moveFolderPath(folder.path, targetPath, scene.folderPath);
+        await this.extensionDataService.saveScene(scene);
+      }
+      await this.ngOnInit();
+      await this.dialogService.openToast('Folder renamed/moved.', 1000);
     } catch (error: unknown) {
-      this.showOperationError('Drawing could not be created.', error);
+      this.showOperationError('Folder could not be renamed or moved.', error);
     }
   }
 
@@ -199,6 +239,20 @@ export class DrawingsPage {
   private async loadSortState(): Promise<void> {
     const storedSortState = await this.dataService.getValue<DrawingsSortState>(await this.getSortStorageKey(), true);
     this.sortState.set(this.isValidSortState(storedSortState) ? storedSortState : DEFAULT_SORT_STATE);
+  }
+
+  private async createDrawing(details: { name: string; folderPath: string } | null): Promise<void> {
+    const name = details?.name.trim();
+    if (!details || !name) return;
+    const drawingId = newGuid();
+    try {
+      await this.extensionDataService.saveScene({
+        id: drawingId, name, folderPath: normalizeFolderPath(details.folderPath), elements: [], __etag: 0,
+      });
+      this.drawingIdSelected.emit(drawingId);
+    } catch (error: unknown) {
+      this.showOperationError('Drawing could not be created.', error);
+    }
   }
 
   private async getSortStorageKey(): Promise<string> {

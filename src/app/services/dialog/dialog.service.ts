@@ -11,6 +11,16 @@ export type DrawingDetails = {
     folderPath: string;
 };
 
+export type DrawingDetailsLabels = {
+    name: string;
+    folderPath: string;
+};
+
+const DEFAULT_DRAWING_DETAILS_LABELS: DrawingDetailsLabels = {
+    name: 'Drawing name',
+    folderPath: 'Folder path (optional)',
+};
+
 @Injectable({ providedIn: 'root' })
 export class DialogService {
     azureDevOpsSdkService = inject(AzureDevOpsSdkService);
@@ -43,14 +53,15 @@ export class DialogService {
     public async promptDrawingDetails(
         title: string,
         initialValue: DrawingDetails = { name: '', folderPath: '' },
+        labels: DrawingDetailsLabels = DEFAULT_DRAWING_DETAILS_LABELS,
     ): Promise<DrawingDetails | null> {
         if (!environment.production) {
-            const name = prompt('Drawing name', initialValue.name);
+            const name = prompt(labels.name, initialValue.name);
             if (name === null) {
                 return null;
             }
 
-            const folderPath = prompt('Folder path (optional)', initialValue.folderPath);
+            const folderPath = prompt(labels.folderPath, initialValue.folderPath);
             return folderPath === null ? null : { name, folderPath };
         }
 
@@ -62,7 +73,7 @@ export class DialogService {
         return new Promise((resolve) => {
             hostPageLayoutService.openCustomDialog<DrawingDetails | null>(contributionId, {
                 title,
-                configuration: { initialValue },
+                configuration: { initialValue, labels },
                 onClose: (result) => resolve(result ?? null),
             });
         });

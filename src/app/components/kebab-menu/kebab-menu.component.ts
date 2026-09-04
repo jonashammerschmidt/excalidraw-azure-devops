@@ -1,4 +1,4 @@
-import { Component, ElementRef, HostListener, inject, output, signal } from '@angular/core';
+import { Component, ElementRef, HostListener, inject, input, output, signal } from '@angular/core';
 
 @Component({
   selector: 'app-kebab-menu',
@@ -11,10 +11,15 @@ export class KebabMenuComponent {
 
   readonly open = signal(false);
 
+  readonly canCreateDrawing = input(false);
+  readonly canDelete = input(true);
+
+  readonly createDrawing = output<void>();
   readonly rename = output<void>();
   readonly delete = output<void>();
 
   toggle() { this.open.update(v => !v); }
+  onCreateDrawing() { this.open.set(false); this.createDrawing.emit(); }
   onRename() { this.open.set(false); this.rename.emit(); }
   onDelete() { this.open.set(false); this.delete.emit(); }
 
