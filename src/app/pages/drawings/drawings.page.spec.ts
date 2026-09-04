@@ -1,5 +1,5 @@
 import { SceneMeta } from '../../model/excalidraw-scenes/excalidraw-scenes.service';
-import { createDrawingTree, flattenDrawingTree, normalizeFolderPath } from './drawings.page';
+import { createDrawingTree, flattenDrawingTree, moveFolderPath, normalizeFolderPath } from './drawings.page';
 
 describe('drawing tree helpers', () => {
   const drawing = (id: string, name: string, folderPath?: string, updatedAt = '2026-01-01T00:00:00.000Z'): SceneMeta => ({
@@ -50,5 +50,12 @@ describe('drawing tree helpers', () => {
     const entries = flattenDrawingTree(tree, new Set(), { column: 'updatedAt', direction: 'desc' });
     expect(entries.map(entry => entry.kind === 'folder' ? `folder:${entry.folder.name}` : `drawing:${entry.drawing.name}`))
       .toEqual(['folder:Alpha', 'folder:Zulu', 'drawing:Zulu', 'drawing:Alpha']);
+  });
+
+  it('moves a folder path while retaining the relative paths of its descendants', () => {
+    expect(moveFolderPath('Architecture', 'Product/Architecture', 'Architecture/Backend'))
+      .toBe('Product/Architecture/Backend');
+    expect(moveFolderPath('Architecture', 'Product/Architecture', 'Other'))
+      .toBe('Other');
   });
 });

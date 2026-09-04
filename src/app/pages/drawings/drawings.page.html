@@ -39,7 +39,8 @@
                                 <span>{{entry.folder.name}}</span>
                             </button>
                         </td>
-                        <td></td><td></td>
+                        <td></td>
+                        <td class="menu-cell"><app-kebab-menu [canCreateDrawing]="true" [canDelete]="false" (createDrawing)="addInFolder(entry.folder)" (rename)="renameFolder(entry.folder)" (click)="$event.stopPropagation()"></app-kebab-menu></td>
                     </tr>
                     } @else {
                     <tr class="drawing-row">
