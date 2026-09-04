@@ -52,6 +52,21 @@ describe('drawing tree helpers', () => {
       .toEqual(['folder:Alpha', 'folder:Zulu', 'drawing:Zulu', 'drawing:Alpha']);
   });
 
+  it('sorts drawing and folder names naturally', () => {
+    const tree = createDrawingTree([
+      drawing('ten', 'Drawing 10'),
+      drawing('two', 'Drawing 2'),
+      drawing('one', 'Drawing 1'),
+      drawing('folder-ten', 'In folder 10', 'Folder 10'),
+      drawing('folder-two', 'In folder 2', 'Folder 2'),
+    ]);
+
+    const entries = flattenDrawingTree(tree, new Set(), { column: 'name', direction: 'asc' });
+
+    expect(entries.map(entry => entry.kind === 'folder' ? `folder:${entry.folder.name}` : `drawing:${entry.drawing.name}`))
+      .toEqual(['folder:Folder 2', 'folder:Folder 10', 'drawing:Drawing 1', 'drawing:Drawing 2', 'drawing:Drawing 10']);
+  });
+
   it('moves a folder path while retaining the relative paths of its descendants', () => {
     expect(moveFolderPath('Architecture', 'Product/Architecture', 'Architecture/Backend'))
       .toBe('Product/Architecture/Backend');

@@ -64,7 +64,7 @@ export function flattenDrawingTree(
 ): DrawingTreeEntry[] {
   const entries: DrawingTreeEntry[] = [];
   const appendEntries = (folder: DrawingFolder, depth: number): void => {
-    for (const childFolder of [...folder.folders].sort((left, right) => left.name.localeCompare(right.name, undefined, { sensitivity: 'base' }))) {
+    for (const childFolder of [...folder.folders].sort((left, right) => compareNames(left.name, right.name))) {
       entries.push({ kind: 'folder', folder: childFolder, depth });
       if (expandedFolderPaths.has(childFolder.path)) appendEntries(childFolder, depth + 1);
     }
@@ -79,11 +79,15 @@ export function flattenDrawingTree(
 function compareScenes(left: SceneMeta, right: SceneMeta, sortState: DrawingsSortState): number {
   const multiplier = sortState.direction === 'asc' ? 1 : -1;
   if (sortState.column === 'name') {
-    const result = left.name.localeCompare(right.name, undefined, { sensitivity: 'base' });
+    const result = compareNames(left.name, right.name);
     return result !== 0 ? result * multiplier : compareIsoDates(left.updatedAt, right.updatedAt) * -1;
   }
   const result = compareIsoDates(left.updatedAt, right.updatedAt);
-  return result !== 0 ? result * multiplier : left.name.localeCompare(right.name, undefined, { sensitivity: 'base' });
+  return result !== 0 ? result * multiplier : compareNames(left.name, right.name);
+}
+
+function compareNames(left: string, right: string): number {
+  return left.localeCompare(right, undefined, { numeric: true, sensitivity: 'base' });
 }
 
 function compareIsoDates(left: string, right: string): number {
